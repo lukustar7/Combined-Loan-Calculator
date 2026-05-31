@@ -18,7 +18,7 @@
   --win-gray-dark: #808080;  /* 未激活窗口标题栏左侧 */
   --win-gray-light: #c0c0c0; /* 未激活窗口标题栏右侧 */
   --win-white: #ffffff;      /* 输入框/工作区白色 */
-  --win-font: 'Tahoma', 'SimSun', 'Microsoft YaHei', sans-serif;
+  --win-font: "MS Sans Serif", Tahoma, Arial, "SimSun", "宋体", "Songti SC", "STSong", sans-serif;
 }
 
 /* 全局与重置样式 */
@@ -37,7 +37,8 @@ body {
   height: 100vh;
   width: 100vw;
   user-select: none;
-  -webkit-font-smoothing: none; /* 让字体更具像素感 */
+  -webkit-font-smoothing: subpixel-antialiased; /* macOS 次像素渲染，防止中文字体发虚破碎，保持字迹锐利 */
+  -moz-osx-font-smoothing: auto;
 }
 
 /* 经典 3D 凸起边框 (Outset) */

@@ -12,7 +12,7 @@ let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
 let trendChart = null; // Chart.js 实例
 
-// 默认的初始数据（为保持通用性，示例命名为“贷款 1”和“贷款 2”）
+// 默认的初始数据（为保持通用性，示例命名为“贷款 1”）
 const DEFAULT_LOANS = [
   {
     id: 'loan_1',
@@ -23,16 +23,6 @@ const DEFAULT_LOANS = [
     term: 360,        // 期限 (月)
     startYear: 2026,  // 首次还款年份
     startMonth: 6     // 首次还款月份
-  },
-  {
-    id: 'loan_2',
-    name: '贷款 2',
-    amount: 50,
-    rate: 3.0,
-    method: 'ACP',
-    term: 120,
-    startYear: 2027,
-    startMonth: 1
   }
 ];
 
