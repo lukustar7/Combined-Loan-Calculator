@@ -477,10 +477,19 @@ function renderTreeView() {
   addNode.style.marginTop = '10px';
   addNode.style.borderTop = '1px dotted var(--win-shadow)';
   addNode.style.paddingTop = '6px';
-  addNode.innerHTML = `
-    <span class="win-tree-item-icon">➕</span>
-    <span style="font-weight:bold; color:#000080;">新增贷款.lnk</span>
-  `;
+  
+  if (loans.length >= 20) {
+    addNode.style.opacity = '0.6';
+    addNode.innerHTML = `
+      <span class="win-tree-item-icon">❌</span>
+      <span style="font-weight:bold; color:var(--win-shadow);">新增贷款... (已达20笔上限)</span>
+    `;
+  } else {
+    addNode.innerHTML = `
+      <span class="win-tree-item-icon">➕</span>
+      <span style="font-weight:bold; color:#000080;">新增贷款.lnk</span>
+    `;
+  }
   addNode.onclick = createNewLoan;
   container.appendChild(addNode);
 }
@@ -678,6 +687,12 @@ function handleParamChange() {
  * 动态“新增”贷款配置文件
  */
 function createNewLoan() {
+  // 防御性控制：最大支持 20 笔贷款配置
+  if (loans.length >= 20) {
+    alert('⚠️ 系统警报 (MAX_LIMIT_REACHED):\n\n当前装载的配置文件已达系统稳定运行上限 (20/20)。\n\n为避免系统性能过度损耗，请先销毁不必要的配置文件 (.cfg) 后再行创建。');
+    return;
+  }
+
   // 查找一个未被占用的“贷款 N”序列名称
   let count = 1;
   let newName = `贷款 ${loans.length + count}`;
