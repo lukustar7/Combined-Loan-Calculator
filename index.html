@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的电脑 - 贷款组合管理器.exe</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- 引入 Chart.js 绘制复古像素风趋势图 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- 💻 经典 Windows 98 桌面 -->
+  <div class="win98-desktop">
+    
+    <!-- 📂 主窗口管理器 -->
+    <div class="win98-window win-outset" id="mainWindow">
+      
+      <!-- 窗口标题栏 -->
+      <div class="win-titlebar">
+        <div class="win-titlebar-icon">📁</div>
+        <div class="win-titlebar-title" id="windowTitle">我的电脑 - 贷款组合管理器.exe</div>
+        <div class="win-titlebar-controls">
+          <button class="win-titlebar-btn" title="最小化">_</button>
+          <button class="win-titlebar-btn" title="最大化">⛶</button>
+          <button class="win-titlebar-btn close-btn" title="关闭" onclick="alert('系统正在后台稳定运行，建议最小化而非关闭本程序。')">✖</button>
+        </div>
+      </div>
+
+      <!-- 菜单栏 -->
+      <div class="win-menubar">
+        <div class="win-menu-item" onclick="toggleStartMenu()">文件(F)</div>
+        <div class="win-menu-item" onclick="createNewLoan()">编辑(E)</div>
+        <div class="win-menu-item" onclick="alert('自动实时保存已开启。所有计算数据均保存在本地浏览器缓存（LocalStorage）中。')">工具(T)</div>
+        <div class="win-menu-item" onclick="showAboutDialog()">帮助(H)</div>
+      </div>
+
+      <!-- 🔍 资源管理器工作区布局 -->
+      <div class="win-explorer-layout">
+        
+        <!-- 左侧：树形资源管理器 -->
+        <div class="win-sidebar-tree win-inset">
+          <div class="win-tree-container" id="treeView">
+            <!-- 由 JavaScript 动态渲染树形节点 -->
+            <!-- 📁 贷款组合汇总 -->
+            <!--   📄 贷款 1.cfg -->
+            <!--   📄 贷款 2.cfg -->
+            <!--   ➕ 新增贷款... -->
+          </div>
+        </div>
+
+        <!-- 右侧：工作区 -->
+        <div class="win-workspace">
+          
+          <!-- 面板 1：全局汇总视图 (默认展示) -->
+          <div class="win-workspace-content" id="panelSummary" style="display: flex;">
+            
+            <!-- 📊 汇总指标网格 -->
+            <div class="win-summary-grid" id="summaryGrid">
+              <!-- 由 JS 渲染 -->
+              <div class="win-summary-card win-inset">
+                <span class="label">贷款总额</span>
+                <span class="value" id="sumPrincipal">0.00 万元</span>
+              </div>
+              <div class="win-summary-card win-inset">
+                <span class="label">应还总利息</span>
+                <span class="value" id="sumInterest">0.00 万元</span>
+              </div>
+              <div class="win-summary-card win-inset">
+                <span class="label">累计本息合计</span>
+                <span class="value" id="sumTotal">0.00 万元</span>
+              </div>
+              <div class="win-summary-card win-inset">
+                <span class="label">首月还款额</span>
+                <span class="value" id="sumFirstMonth">0.00 元</span>
+              </div>
+              <div class="win-summary-card win-inset">
+                <span class="label">最高月供月份</span>
+                <span class="value" id="sumPeakMonth">-</span>
+              </div>
+            </div>
+
+            <!-- 📈 系统性能监视器 (未来月供堆叠图) -->
+            <div class="win-group-box win-chart-panel">
+              <span class="win-group-box-title">系统性能监视器 - 未来月供趋势图表 (.cfg)</span>
+              <div style="flex: 1; position: relative; min-height: 0;">
+                <canvas id="monthlyTrendChart"></canvas>
+              </div>
+            </div>
+
+            <!-- 📋 全局合并还款计划总表 -->
+            <div class="win-group-box" style="flex: 1.2; display: flex; flex-direction: column; min-height: 200px;">
+              <span class="win-group-box-title">合并月度还款计划总表</span>
+              <div class="win-table-container" style="margin-top: 4px;">
+                <table class="win-table" id="tableSummary">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px;">还款年月</th>
+                      <th>月供总额 (元)</th>
+                      <th>本金总额 (元)</th>
+                      <th>利息总额 (元)</th>
+                      <th>剩余本金总额 (元)</th>
+                      <th>包含活跃贷款</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableSummaryBody">
+                    <!-- JS 渲染 -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 面板 2：单笔贷款编辑与明细视图 -->
+          <div class="win-workspace-content" id="panelDetail" style="display: none;">
+            
+            <div class="win-tab-container">
+              <!-- 选项卡标签组 -->
+              <div class="win-tabs">
+                <button class="win-tab active" onclick="switchDetailTab('params')">基本参数(P)</button>
+                <button class="win-tab" onclick="switchDetailTab('plan')">还款计划表(L)</button>
+              </div>
+              
+              <!-- 选项卡内容包裹区 -->
+              <div class="win-tab-content-wrapper">
+                
+                <!-- 子页 1：贷款基本配置参数 -->
+                <div class="win-tab-pane active" id="tabDetailParams">
+                  
+                  <div class="win-group-box">
+                    <span class="win-group-box-title">贷款基本属性配置</span>
+                    
+                    <div style="max-width: 480px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
+                      
+                      <div class="win-field-row">
+                        <label for="loanName">贷款名称：</label>
+                        <input type="text" id="loanName" class="win-input" placeholder="例如：贷款 1" oninput="handleParamChange()">
+                      </div>
+                      
+                      <div class="win-field-row">
+                        <label for="loanAmount">贷款金额：</label>
+                        <input type="number" id="loanAmount" class="win-input" min="0.01" step="any" oninput="handleParamChange()">
+                        <span class="unit">万元</span>
+                      </div>
+
+                      <div class="win-field-row">
+                        <label for="loanRate">年化利率：</label>
+                        <input type="number" id="loanRate" class="win-input" min="0" max="100" step="0.01" oninput="handleParamChange()">
+                        <span class="unit">%</span>
+                      </div>
+
+                      <div class="win-field-row">
+                        <label>还款方式：</label>
+                        <div style="flex: 1; display: flex; gap: 20px; align-items: center;">
+                          <label class="win-radio-container" style="width: auto;">
+                            <input type="radio" name="repayMethod" value="ACPI" class="win-radio" checked onchange="handleParamChange()"> 等额本息
+                          </label>
+                          <label class="win-radio-container" style="width: auto;">
+                            <input type="radio" name="repayMethod" value="ACP" class="win-radio" onchange="handleParamChange()"> 等额本金
+                          </label>
+                        </div>
+                      </div>
+
+                      <div class="win-field-row">
+                        <label for="loanTerm">贷款期限：</label>
+                        <input type="number" id="loanTerm" class="win-input" min="1" step="1" oninput="handleParamChange()">
+                        <span class="unit">个月</span>
+                      </div>
+
+                      <div class="win-field-row">
+                        <label for="loanStartYear">首次还款：</label>
+                        <input type="number" id="loanStartYear" class="win-input" min="1990" max="2100" step="1" oninput="handleParamChange()" style="flex: 0.4;">
+                        <span style="margin: 0 4px;">年</span>
+                        <input type="number" id="loanStartMonth" class="win-input" min="1" max="12" step="1" oninput="handleParamChange()" style="flex: 0.3;">
+                        <span>月</span>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <!-- 这一笔贷款的简单汇总指标 -->
+                  <div class="win-group-box" style="margin-top: 15px;">
+                    <span class="win-group-box-title">本笔贷款计算速览</span>
+                    <div class="win-summary-grid" style="margin-top: 5px;">
+                      <div class="win-summary-card win-inset">
+                        <span class="label">本笔本息合计</span>
+                        <span class="value" id="detailSumTotal">0.00 元</span>
+                      </div>
+                      <div class="win-summary-card win-inset">
+                        <span class="label">本笔应付利息</span>
+                        <span class="value" id="detailSumInterest">0.00 元</span>
+                      </div>
+                      <div class="win-summary-card win-inset">
+                        <span class="label">首月应还月供</span>
+                        <span class="value" id="detailFirstMonth">0.00 元</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 操作栏 -->
+                  <div style="margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px;">
+                    <button class="win-btn" onclick="deleteCurrentLoan()" style="color: #ff0000; font-weight: bold;">
+                      🗑️ 销毁本笔贷款.lnk
+                    </button>
+                  </div>
+
+                </div>
+
+                <!-- 子页 2：单笔贷款详细还款计划表 -->
+                <div class="win-tab-pane" id="tabDetailPlan">
+                  <div class="win-table-container">
+                    <table class="win-table" id="tableDetail">
+                      <thead>
+                        <tr>
+                          <th style="width: 60px;">期数</th>
+                          <th>还款年月</th>
+                          <th>当月月供 (元)</th>
+                          <th>偿还本金 (元)</th>
+                          <th>偿还利息 (元)</th>
+                          <th>剩余本金 (元)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tableDetailBody">
+                        <!-- JS 渲染 -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 📥 经典的 Windows 98 底部任务栏 (Taskbar) -->
+    <div class="win98-taskbar">
+      
+      <!-- 开始按钮 -->
+      <button class="win-btn win-start-btn" id="startBtn" onclick="toggleStartMenu()">
+        <span class="win-start-logo"></span>
+        开始(S)
+      </button>
+
+      <!-- 任务项容器 -->
+      <div class="win-task-items">
+        <button class="win-btn win-task-btn active" id="taskbarTitle" onclick="minimizeOrRestoreMainWindow()">
+          📁 贷款组合管理器.cfg
+        </button>
+      </div>
+
+      <!-- 系统状态区 (时钟) -->
+      <div class="win-systray">
+        <span style="cursor: pointer;" onclick="alert('扬声器音量：100% 🔊\n经典 MIDI 芯片正在后台就绪。')">🔊</span>
+        <span style="cursor: pointer; font-weight: bold;" onclick="alert('已建立安全网络连接 🌐\n项目已就绪，随时可以 Push 至 GitHub。')">🖥️</span>
+        <div class="win-systray-clock" id="systrayClock">15:48</div>
+      </div>
+
+    </div>
+
+    <!-- 💾 开始菜单 (Start Menu) -->
+    <div class="win-start-menu" id="startMenu">
+      <div class="win-start-menu-sidebar">
+        Windows 98
+      </div>
+      <div class="win-start-menu-content">
+        <div class="win-start-menu-item" onclick="createNewLoan(); toggleStartMenu();">
+          ➕ 新增贷款文件(.lnk)
+        </div>
+        <div class="win-start-menu-item" onclick="clearAllData(); toggleStartMenu();">
+          🗑️ 清空所有数据(.sys)
+        </div>
+        <div class="win-start-menu-divider"></div>
+        <a href="https://github.com" target="_blank" class="win-start-menu-item" style="color: black;" onclick="toggleStartMenu();">
+          🌐 访问 GitHub 仓库
+        </a>
+        <div class="win-start-menu-item" onclick="showAboutDialog(); toggleStartMenu();">
+          ❓ 关于本软件...
+        </div>
+      </div>
+    </div>
+
+    <!-- 📢 关于对话框 (Modal Dialog) -->
+    <div class="win-dialog-overlay" id="aboutDialogOverlay" onclick="closeAboutDialog(event)">
+      <div class="win-dialog win-outset" onclick="event.stopPropagation()">
+        
+        <!-- 弹窗标题 -->
+        <div class="win-titlebar">
+          <div class="win-titlebar-title">关于贷款组合管理器</div>
+          <div class="win-titlebar-controls">
+            <button class="win-titlebar-btn close-btn" onclick="closeAboutDialog(event)">✖</button>
+          </div>
+        </div>
+
+        <!-- 弹窗内容 -->
+        <div class="win-dialog-body">
+          <div class="win-dialog-icon">💾</div>
+          <div class="win-dialog-message">
+            <strong>贷款组合管理器 (Multi-Loan Manager 98)</strong><br>
+            版本号：v1.9.8 (Beta)<br><br>
+            本程序是专为解决多笔债务合并分析、计算时差月供而开发的通用沙盘工具。无计算按钮，实时重算。<br><br>
+            著作权所有 (C) 1998 - 2026. 保留所有权利。
+          </div>
+        </div>
+
+        <!-- 弹窗底部 -->
+        <div class="win-dialog-footer">
+          <button class="win-btn" onclick="closeAboutDialog(event)" style="width: 70px;">确定</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

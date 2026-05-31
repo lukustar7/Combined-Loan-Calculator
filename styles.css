@@ -1,0 +1,804 @@
+/*
+ * Windows 98 经典复古样式系统 (Windows 98 Retro CSS Style System)
+ * 极致像素级还原 90 年代操作系统核心视觉与交互
+ */
+
+:root {
+  /* 经典的 Windows 98 色彩配置 */
+  --win-teal: #008080;       /* 经典桌面青绿色 */
+  --win-gray: #d4d0c8;       /* 窗口主色灰 */
+  --win-face: #d4d0c8;       /* 窗口表盘灰 */
+  --win-highlight: #ffffff;  /* 3D 亮部白 */
+  --win-shadow: #808080;     /* 3D 暗部深灰 */
+  --win-black: #000000;      /* 3D 边缘纯黑 */
+  --win-text: #000000;       /* 文字纯黑 */
+  --win-text-disabled: #808080; /* 禁用文字灰色 */
+  --win-blue-dark: #000080;  /* 激活窗口标题栏左侧 */
+  --win-blue-light: #1084d0; /* 激活窗口标题栏右侧 */
+  --win-gray-dark: #808080;  /* 未激活窗口标题栏左侧 */
+  --win-gray-light: #c0c0c0; /* 未激活窗口标题栏右侧 */
+  --win-white: #ffffff;      /* 输入框/工作区白色 */
+  --win-font: 'Tahoma', 'SimSun', 'Microsoft YaHei', sans-serif;
+}
+
+/* 全局与重置样式 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--win-font);
+  font-size: 12px;
+  background-color: var(--win-teal);
+  color: var(--win-text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+  -webkit-font-smoothing: none; /* 让字体更具像素感 */
+}
+
+/* 经典 3D 凸起边框 (Outset) */
+.win-outset {
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 1px 1px 0 0 var(--win-black);
+  background-color: var(--win-face);
+}
+
+/* 经典 3D 凹陷边框 (Inset) */
+.win-inset {
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  background-color: var(--win-white);
+}
+
+/* 经典按钮样式 */
+.win-btn {
+  font-family: var(--win-font);
+  font-size: 12px;
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 1px 1px 0 0 var(--win-black);
+  padding: 4px 12px;
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.win-btn:active:not(:disabled) {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  padding: 5px 11px 3px 13px; /* 偏移 1px 实现按下效果 */
+}
+
+.win-btn:focus-visible {
+  outline: 1px dotted var(--win-black);
+  outline-offset: -4px;
+}
+
+.win-btn:disabled {
+  color: var(--win-shadow);
+  text-shadow: 1px 1px 0 var(--win-highlight);
+  cursor: not-allowed;
+}
+
+/* 经典输入框 */
+.win-input, .win-select {
+  font-family: var(--win-font);
+  font-size: 12px;
+  height: 22px;
+  padding: 2px 4px;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  background-color: var(--win-white);
+  color: var(--win-text);
+  outline: none;
+}
+
+.win-input:focus, .win-select:focus {
+  /* 聚焦时不改变边框颜色，只出现经典虚线焦点或维持原样 */
+}
+
+.win-input:disabled, .win-select:disabled {
+  background-color: var(--win-face);
+  color: var(--win-text-disabled);
+}
+
+/* 经典复选框和单选框容器 */
+.win-radio-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.win-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  background-color: var(--win-white);
+  outline: none;
+  position: relative;
+}
+
+.win-radio:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--win-black);
+  border-radius: 50%;
+}
+
+/* 💻 经典 Windows 桌面 */
+.win98-desktop {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 28px; /* 给底部任务栏留出空间 */
+}
+
+/* 📂 主窗口管理器 */
+.win98-window {
+  margin: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 允许 Flex 子项收缩 */
+}
+
+/* 窗口标题栏 */
+.win-titlebar {
+  background: linear-gradient(90deg, var(--win-blue-dark), var(--win-blue-light));
+  color: var(--win-white);
+  padding: 3px 4px 3px 6px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  font-size: 12px;
+}
+
+.win-titlebar.inactive {
+  background: linear-gradient(90deg, var(--win-gray-dark), var(--win-gray-light));
+  color: var(--win-face);
+}
+
+.win-titlebar-icon {
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.win-titlebar-title {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 标题栏右侧按钮组 */
+.win-titlebar-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.win-titlebar-btn {
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  font-size: 9px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  background-color: var(--win-face);
+  color: var(--win-black);
+  cursor: pointer;
+  outline: none;
+}
+
+.win-titlebar-btn:active {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  padding: 1px 0 0 1px;
+}
+
+.win-titlebar-btn.close-btn {
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+}
+
+/* 菜单栏 */
+.win-menubar {
+  background-color: var(--win-face);
+  border-bottom: 1px solid var(--win-shadow);
+  display: flex;
+  gap: 12px;
+  padding: 2px 8px;
+}
+
+.win-menu-item {
+  cursor: pointer;
+  padding: 2px 6px;
+  position: relative;
+}
+
+.win-menu-item:hover {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+}
+
+/* 🔍 资源管理器工作区布局 */
+.win-explorer-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background-color: var(--win-face);
+  padding: 4px;
+  gap: 4px;
+}
+
+/* 左侧：树形资源管理器 */
+.win-sidebar-tree {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.win-tree-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+/* 树形节点样式 */
+.win-tree-item {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  gap: 6px;
+}
+
+.win-tree-item:hover {
+  background-color: rgba(0, 0, 128, 0.05);
+}
+
+.win-tree-item.selected {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+}
+
+.win-tree-item-icon {
+  width: 16px;
+  height: 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* 右侧：工作区 */
+.win-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+
+.win-workspace-content {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 📋 属性选项卡 (Tab Control) */
+.win-tab-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.win-tabs {
+  display: flex;
+  gap: 2px;
+  padding-left: 6px;
+  border-bottom: 2px solid var(--win-highlight);
+  z-index: 2;
+}
+
+.win-tab {
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-face) var(--win-highlight);
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-weight: normal;
+  margin-bottom: -2px; /* 压在内容区边框上 */
+  outline: none;
+  font-size: 12px;
+}
+
+.win-tab.active {
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-face) var(--win-highlight);
+  padding: 5px 14px 6px 14px;
+  font-weight: bold;
+  margin-top: -2px;
+  z-index: 3;
+}
+
+.win-tab-content-wrapper {
+  flex: 1;
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-face) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 1px 1px 0 0 var(--win-black);
+  padding: 10px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.win-tab-pane {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.win-tab-pane.active {
+  display: flex;
+}
+
+/* 🛠️ 复古表单群组 (Group Box) */
+.win-group-box {
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  padding: 12px 10px;
+  margin-top: 8px;
+  position: relative;
+}
+
+.win-group-box-title {
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  background-color: var(--win-face);
+  padding: 0 4px;
+  font-weight: bold;
+}
+
+.win-field-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.win-field-row:last-child {
+  margin-bottom: 0;
+}
+
+.win-field-row label {
+  width: 90px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.win-field-row .win-input,
+.win-field-row .win-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.win-field-row .unit {
+  width: 30px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* 📊 汇总面板样式 */
+.win-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.win-summary-card {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.win-summary-card .label {
+  color: var(--win-shadow);
+  font-size: 11px;
+}
+
+.win-summary-card .value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #000080; /* 经典的系统高亮蓝 */
+  font-family: 'Courier New', Courier, monospace; /* 采用数码/计算感字体 */
+}
+
+/* 📈 复古图表容器 */
+.win-chart-panel {
+  flex: 1;
+  min-height: 250px;
+  max-height: 400px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 📋 经典 Win98 表格样式 */
+.win-table-container {
+  flex: 1;
+  overflow: auto;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  background-color: var(--win-white);
+}
+
+.win-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 11px;
+}
+
+.win-table th {
+  background-color: var(--win-face);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-weight: bold;
+  padding: 4px 6px;
+  border-right: 1px solid var(--win-shadow);
+  border-bottom: 1px solid var(--win-shadow);
+  box-shadow: inset 1px 1px 0 #fff;
+  user-select: none;
+}
+
+.win-table th:active {
+  /* 点击表头没有特殊效果，或者有略微凹陷 */
+}
+
+.win-table td {
+  padding: 4px 6px;
+  border-right: 1px dotted #c0c0c0;
+  border-bottom: 1px dotted #c0c0c0;
+  color: var(--win-text);
+  font-family: Tahoma, 'SimSun', monospace;
+}
+
+.win-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.win-table tr.selected {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+}
+
+.win-table tr.selected td {
+  color: var(--win-white);
+}
+
+/* 📥 经典的 Windows 98 底部任务栏 (Taskbar) */
+.win98-taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 28px;
+  background-color: var(--win-face);
+  border-top: 2px solid var(--win-highlight);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  z-index: 1000;
+  box-shadow: 0 -1px 0 0 var(--win-shadow);
+}
+
+/* 开始按钮 */
+.win-start-btn {
+  font-weight: bold;
+  height: 22px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.win-start-logo {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  background: linear-gradient(135deg, #ff4b4b 50%, #4bff4b 50%); /* 经典四色徽标极简示意 */
+  position: relative;
+  box-shadow: 1px 1px 0 var(--win-black);
+}
+
+.win-start-logo::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  background: linear-gradient(135deg, #4b4bff 50%, #ffff4b 50%);
+}
+
+/* 正在运行的任务按钮区 */
+.win-task-items {
+  flex-grow: 1;
+  margin-left: 8px;
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.win-task-btn {
+  height: 22px;
+  max-width: 150px;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 2px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+}
+
+.win-task-btn.active {
+  background-color: #e4e0d8;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  padding: 3px 5px 1px 7px;
+  font-weight: bold;
+}
+
+/* 右侧系统状态托盘 */
+.win-systray {
+  height: 22px;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  background-color: var(--win-face);
+}
+
+.win-systray-clock {
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+}
+
+/* 💾 开始菜单 (Start Menu) */
+.win-start-menu {
+  position: absolute;
+  bottom: 26px;
+  left: 2px;
+  width: 180px;
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+  display: none;
+  z-index: 2000;
+  padding: 2px;
+}
+
+.win-start-menu.show {
+  display: flex;
+}
+
+.win-start-menu-sidebar {
+  width: 24px;
+  background: linear-gradient(180deg, #000080, #1084d0);
+  color: var(--win-white);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-shadow: 1px 1px 0 var(--win-black);
+  font-family: Arial, sans-serif;
+}
+
+.win-start-menu-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.win-start-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--win-black);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.win-start-menu-item:hover {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+}
+
+.win-start-menu-divider {
+  height: 1px;
+  background-color: var(--win-shadow);
+  border-bottom: 1px solid var(--win-highlight);
+  margin: 2px 0;
+}
+
+/* 📢 经典 Windows 对话框 (About/Modal Dialog) */
+.win-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.15); /* 几乎透明的蒙版 */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.win-dialog-overlay.show {
+  display: flex;
+}
+
+.win-dialog {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.win-dialog-body {
+  padding: 15px;
+  display: flex;
+  gap: 12px;
+}
+
+.win-dialog-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.win-dialog-message {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--win-black);
+}
+
+.win-dialog-footer {
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* 📐 滚动条自定义 - 还原经典 Windows 98 粗灰色滚动条 */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background-color: #e6e6e6;
+  border: 1px solid #808080;
+}
+
+::-webkit-scrollbar-track {
+  background: repeating-conic-gradient(var(--win-face) 0% 25%, var(--win-highlight) 0% 50%) 50% / 2px 2px; /* 棋盘点阵模拟凹陷 */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+}
+
+::-webkit-scrollbar-thumb:active {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+}
+
+/* 📱 极佳的响应式流式布局 */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+    height: auto;
+  }
+  
+  .win98-desktop {
+    height: auto;
+    padding-bottom: 40px;
+  }
+  
+  .win98-window {
+    margin: 5px;
+    height: auto;
+    flex: none;
+  }
+  
+  .win-explorer-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .win-sidebar-tree {
+    width: 100%;
+    height: 140px; /* 固定一个矮的高度 */
+    border-bottom: 2px solid var(--win-shadow);
+  }
+  
+  .win-workspace {
+    height: auto;
+  }
+  
+  .win-tab-content-wrapper {
+    height: auto;
+    min-height: 450px;
+  }
+  
+  .win-chart-panel {
+    min-height: 250px;
+    max-height: 300px;
+  }
+  
+  .win-table-container {
+    height: 300px; /* 给明细表格固定高度防溢出 */
+  }
+}
