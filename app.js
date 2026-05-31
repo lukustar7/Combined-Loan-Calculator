@@ -829,6 +829,22 @@ document.addEventListener('focusout', function(e) {
 });
 
 // ==========================================
-// 9. 启动应用
+// 9. 智能跳转至用户的 GitHub 仓库地址
+// ==========================================
+function visitGitHub() {
+  const hostname = window.location.hostname;
+  let targetUrl = 'https://github.com';
+  
+  if (hostname.includes('.github.io')) {
+    const username = hostname.split('.')[0];
+    targetUrl = `https://github.com/${username}/Combined-Loan-Calculator`;
+  } else {
+    alert('📡 部署提示：\n\n当您将本项目 push 到 GitHub 并开启 GitHub Pages 后，此链接会自动识别并跳转到您专属的 GitHub 源码仓库！\n\n当前本地运行将为您打开 GitHub 主网。');
+  }
+  window.open(targetUrl, '_blank');
+}
+
+// ==========================================
+// 10. 启动应用
 // ==========================================
 window.onload = initApp;
