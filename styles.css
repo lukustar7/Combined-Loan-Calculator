@@ -20,6 +20,8 @@
   --win-gray-dark: #808080;
   --win-gray-light: #c0c0c0;
   --win-white: #ffffff;
+  --win-box-bg: #ffffff;      /* 引入专用的凹陷组件内部背景色，亮色下为纯白 */
+  --win-text-muted: #808080;  /* 引入专用的辅助说明类文字颜色 */
   --win-font: "MS Sans Serif", Tahoma, Arial, "SimSun", "宋体", "Songti SC", "STSong", sans-serif;
 }
 
@@ -39,7 +41,9 @@ body.dark-theme {
   --win-blue-light: #3060b0;
   --win-gray-dark: #2a2a3a;
   --win-gray-light: #4a4a5a;
-  --win-white: #2a2a3a;
+  --win-white: #ffffff;       /* 保持明亮的前景色纯白，彻底消除深色下文字由于降色导致的隐形缺陷 */
+  --win-box-bg: #2a2a3a;      /* 凹陷容器（如输入框、下拉框、表格、树容器）在深色下为深灰蓝底色 */
+  --win-text-muted: #b8b8c8;  /* 辅助文本（如 summary 卡片顶部说明）在深色下切换为高可读性的浅灰蓝色 */
 }
 
 body.dark-theme .win-summary-card .value {
@@ -90,7 +94,7 @@ body {
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
-  background-color: var(--win-white);
+  background-color: var(--win-box-bg);
 }
 
 /* ==========================================
@@ -141,7 +145,7 @@ body {
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
-  background-color: var(--win-white);
+  background-color: var(--win-box-bg);
   color: var(--win-text);
   outline: none;
 }
@@ -321,6 +325,21 @@ body {
   justify-content: center;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+
+.win-tree-add-btn {
+  font-weight: bold;
+  color: #000080;
+}
+
+body.dark-theme .win-tree-add-btn {
+  color: #6699ff !important;
+}
+
+.win-tree-add-disabled {
+  font-weight: bold;
+  color: var(--win-text-disabled);
 }
 
 /* ==========================================
@@ -520,7 +539,7 @@ body {
 }
 
 .win-summary-card .label {
-  color: var(--win-shadow);
+  color: var(--win-text-muted);
   font-size: 11px;
 }
 
@@ -553,7 +572,7 @@ body {
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
-  background-color: var(--win-white);
+  background-color: var(--win-box-bg);
 }
 
 .win-table {

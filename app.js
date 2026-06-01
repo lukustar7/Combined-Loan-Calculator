@@ -742,12 +742,12 @@ function renderTreeView() {
     addNode.style.cursor = 'not-allowed';
     addNode.innerHTML = `
       <span class="win-tree-item-icon">❌</span>
-      <span style="font-weight:bold; color:var(--win-shadow);">${currentLang === 'zh' ? '新增贷款... (已达20笔上限)' : 'Add Loan... (Max 20 Reached)'}</span>
+      <span class="win-tree-add-disabled">${currentLang === 'zh' ? '新增贷款... (已达20笔上限)' : 'Add Loan... (Max 20 Reached)'}</span>
     `;
   } else {
     addNode.innerHTML = `
       <span class="win-tree-item-icon">➕</span>
-      <span style="font-weight:bold; color:#000080;">${currentLang === 'zh' ? '新增贷款.lnk' : 'Add_Loan.lnk'}</span>
+      <span class="win-tree-add-btn">${currentLang === 'zh' ? '新增贷款.lnk' : 'Add_Loan.lnk'}</span>
     `;
   }
   addNode.onclick = createNewLoan;
