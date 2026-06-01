@@ -79,6 +79,10 @@ const I18N_DICTS = {
     aboutDesc: "通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、深色主题与多语言切换。",
     aboutCopy: "著作权所有 (C) 1998 - 2026.",
     btnOK: "确定",
+    btn5Yr: "5年",
+    btn10Yr: "10年",
+    btn20Yr: "20年",
+    btn30Yr: "30年",
     
     // JS 端特有提示信息
     alertLimit: "⚠️ 系统警报 (MAX_LIMIT_REACHED):\n\n当前装载的配置文件已达系统稳定运行上限 (20/20)。\n\n为避免系统性能过度损耗，请先销毁不必要的配置文件 (.cfg) 后再行创建。",
@@ -147,6 +151,10 @@ const I18N_DICTS = {
     aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, dark mode and i18n support.",
     aboutCopy: "Copyright (C) 1998 - 2026.",
     btnOK: "OK",
+    btn5Yr: "5 Yrs",
+    btn10Yr: "10 Yrs",
+    btn20Yr: "20 Yrs",
+    btn30Yr: "30 Yrs",
     
     // JS 端特有提示信息
     alertLimit: "⚠️ System Alert (MAX_LIMIT_REACHED):\n\nThe active configuration files have reached the system stability limit (20/20).\n\nTo prevent performance degradation, please destroy unused configurations (.cfg) first.",
