@@ -112,7 +112,7 @@ const I18N_DICTS = {
     groupLoanConfig: "Loan Configuration",
     lblName: "Loan Name: ",
     lblAmount: "Amount: ",
-    unitWan: "Wan ¥",
+    unitWan: "10k ¥",
     lblRate: "Annual Rate: ",
     lblMethod: "Repay Method: ",
     methodACPI: "ACPI (Amortized)",
@@ -494,9 +494,16 @@ function calculateAll() {
   });
 
   // 5. 更新全局汇总面板的数据展示，引入千分位金融格式化
-  document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} ${t('unitWan')}`;
-  document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} ${t('unitWan')}`;
-  document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ${t('unitWan')}`;
+  if (currentLang === 'zh') {
+    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} 万元`;
+    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} 万元`;
+    document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} 万元`;
+  } else {
+    // 英文状态下，直接折算为“元 (¥)”，彻底去除搞笑拼音 Wan 的尴尬，更加符合英美直白展现大额金额的金融心智
+    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal * 10000)} ¥`;
+    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest * 10000)} ¥`;
+    document.getElementById('sumTotal').innerText = `${formatNumber((totalSumPrincipal + totalSumInterest) * 10000)} ¥`;
+  }
   
   if (monthlyAggregated.length > 0) {
     document.getElementById('sumFirstMonth').innerText = `${formatNumber(monthlyAggregated[0].payment)} ${currentLang === 'zh' ? '元' : '¥'}`;
