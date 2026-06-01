@@ -44,7 +44,7 @@ const I18N_DICTS = {
     groupLoanConfig: "贷款基本属性配置",
     lblName: "贷款名称：",
     lblAmount: "贷款金额：",
-    unitWan: "万元",
+    unitYuan: "元",
     lblRate: "年化利率：",
     lblMethod: "还款方式：",
     methodACPI: "等额本息",
@@ -112,7 +112,7 @@ const I18N_DICTS = {
     groupLoanConfig: "Loan Configuration",
     lblName: "Loan Name: ",
     lblAmount: "Amount: ",
-    unitWan: "10k ¥",
+    unitYuan: "¥",
     lblRate: "Annual Rate: ",
     lblMethod: "Repay Method: ",
     methodACPI: "ACPI (Amortized)",
@@ -166,14 +166,14 @@ const DEFAULT_LOANS = [
   {
     id: 'loan_1',
     name: '贷款 1',
-    amount: 100,       // 万元
+    amount: 1000000,   // 以“元”为单位，默认 100 万，支持零钱级精确输入
     rate: 3.5,         // 年化利率 %
     method: 'ACPI',    // ACPI: 等额本息, ACP: 等额本金
     term: 360,         // 期限 (月)
     startYear: 2026,   // 首次还款年份
     startMonth: 6,     // 首次还款月份
-    prepayPeriod: '',  // 提前还款期数 (新增字段)
-    prepayAmount: ''   // 提前还款金额，单位万元 (新增字段)
+    prepayPeriod: '',  // 提前还款期数
+    prepayAmount: ''   // 提前还款金额，以“元”为单位
   }
 ];
 
@@ -265,14 +265,14 @@ function getMonthYearOffset(startYear, startMonth, offsetMonths) {
  * 2. 重写最后一期平账逻辑：利息单独按期初剩余本金直算，本金等于所有剩余本金，彻底解决负利息与浮点精度顽疾。
  */
 function calculateSingleLoan(loan) {
-  const amount = (parseFloat(loan.amount) || 0) * 10000; // 转换为“元”
+  const amount = parseFloat(loan.amount) || 0; // 金额单位本即为“元”，无需再乘以一万
   const annualRate = (parseFloat(loan.rate) || 0) / 100; // 年利率小数形式
   const monthlyRate = annualRate / 12; // 月利率
   const term = parseInt(loan.term) || 0; // 还款月数
   
   // 提取提前还款模拟的参数配置
   const prepayPeriod = parseInt(loan.prepayPeriod) || 0;
-  const prepayAmount = (parseFloat(loan.prepayAmount) || 0) * 10000; // 转换为“元”
+  const prepayAmount = parseFloat(loan.prepayAmount) || 0; // 提前还款本即为“元”，无需折算
 
   const details = [];
   let remainingPrincipal = amount; // 剩余本金
@@ -457,7 +457,7 @@ function calculateAll() {
           monthlyRemainingSum += 0; // 已还清，剩余本金为 0
         } else {
           const lObj = loans.find(l => l.id === item.loanId);
-          monthlyRemainingSum += lObj ? (lObj.amount * 10000) : 0; // 还没开始，本金还是总额
+          monthlyRemainingSum += lObj ? (parseFloat(lObj.amount) || 0) : 0; // 还没开始，本金还是总额
         }
       }
     });
@@ -481,7 +481,7 @@ function calculateAll() {
   // 全局缓存合并计划，用于 CSV 一键下载
   globalMonthlyAggregated = monthlyAggregated;
 
-  // 4. 计算全局的本金和利息累加（【彻底消除重复计算】，直接复用 loanSchedules 的利息）
+  // 4. 计算全局的本金和利息累加（【彻底消除重复计算】，直接复用已有的利息明细结果）
   loans.forEach(loan => {
     totalSumPrincipal += parseFloat(loan.amount) || 0;
   });
@@ -489,20 +489,21 @@ function calculateAll() {
   loanSchedules.forEach(item => {
     if (item.schedule.length > 0) {
       const singleInterestSum = item.schedule.reduce((sum, row) => sum + row.interest, 0);
-      totalSumInterest += singleInterestSum / 10000; // 换算成万元
+      totalSumInterest += singleInterestSum; // 直接以“元”为单位进行高精度累加
     }
   });
 
   // 5. 更新全局汇总面板的数据展示，引入千分位金融格式化
   if (currentLang === 'zh') {
-    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} 万元`;
-    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} 万元`;
-    document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} 万元`;
+    // 中文状态下大盘换算为“万元”展现，符合国人阅读习惯，且确保能精确到 1 元起步
+    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal / 10000)} 万元`;
+    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest / 10000)} 万元`;
+    document.getElementById('sumTotal').innerText = `${formatNumber((totalSumPrincipal + totalSumInterest) / 10000)} 万元`;
   } else {
-    // 英文状态下，直接折算为“元 (¥)”，彻底去除搞笑拼音 Wan 的尴尬，更加符合英美直白展现大额金额的金融心智
-    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal * 10000)} ¥`;
-    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest * 10000)} ¥`;
-    document.getElementById('sumTotal').innerText = `${formatNumber((totalSumPrincipal + totalSumInterest) * 10000)} ¥`;
+    // 英文状态下直接以“元 (¥)”大数加千分位展现，彻底消灭 Wan，完美契合英美用户阅读习惯
+    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} ¥`;
+    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} ¥`;
+    document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ¥`;
   }
   
   if (monthlyAggregated.length > 0) {
@@ -1029,10 +1030,10 @@ function createNewLoan() {
   const newLoan = {
     id: newId,
     name: newName,
-    amount: 100, // 默认额度
-    rate: 3.5,   // 默认利率
+    amount: 1000000, // 默认额度：100 万元，以“元”为高精度单位
+    rate: 3.5,       // 默认利率
     method: 'ACPI',
-    term: 240,   // 默认期限
+    term: 240,       // 默认期限
     startYear: new Date().getFullYear(),
     startMonth: new Date().getMonth() + 1,
     prepayPeriod: '',
