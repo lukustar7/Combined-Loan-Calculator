@@ -115,7 +115,13 @@
                       
                       <div class="win-field-row">
                         <label data-i18n="lblName">贷款名称：</label>
-                        <input type="text" id="loanName" class="win-input" oninput="handleParamChange()">
+                        <input type="text" id="loanName" class="win-input" oninput="handleParamChange()" style="flex: 0.6;">
+                        <div class="win-quick-names" style="display: flex; gap: 4px; flex-wrap: wrap;">
+                          <button class="win-quick-name-btn" onclick="setQuickName('Mortgage')" data-i18n="nameMortgage">房贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('Auto')" data-i18n="nameAuto">车贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('Card')" data-i18n="nameCard">信用卡</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('Consumer')" data-i18n="nameConsumer">消费贷</button>
+                        </div>
                       </div>
                       
                       <div class="win-field-row">

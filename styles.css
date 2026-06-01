@@ -508,6 +508,29 @@ body.dark-theme .win-tree-add-btn {
   color: var(--win-white);
 }
 
+.win-quick-name-btn {
+  font-family: var(--win-font);
+  font-size: 10px;
+  padding: 2px 6px;
+  background-color: var(--win-face);
+  color: var(--win-text);
+  border: 1px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+}
+
+.win-quick-name-btn:active {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  padding: 3px 5px 1px 7px;
+}
+
+.win-quick-name-btn:hover {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+}
+
 /* ==========================================
    操作工具栏
    ========================================== */

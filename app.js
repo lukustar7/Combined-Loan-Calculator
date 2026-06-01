@@ -83,6 +83,10 @@ const I18N_DICTS = {
     btn10Yr: "10年",
     btn20Yr: "20年",
     btn30Yr: "30年",
+    nameMortgage: "房贷",
+    nameAuto: "车贷",
+    nameCard: "信用卡",
+    nameConsumer: "消费贷",
     
     // JS 端特有提示信息
     alertLimit: "⚠️ 系统警报 (MAX_LIMIT_REACHED):\n\n当前装载的配置文件已达系统稳定运行上限 (20/20)。\n\n为避免系统性能过度损耗，请先销毁不必要的配置文件 (.cfg) 后再行创建。",
@@ -155,6 +159,10 @@ const I18N_DICTS = {
     btn10Yr: "10 Yrs",
     btn20Yr: "20 Yrs",
     btn30Yr: "30 Yrs",
+    nameMortgage: "Mortgage",
+    nameAuto: "Auto",
+    nameCard: "Card",
+    nameConsumer: "Consumer",
     
     // JS 端特有提示信息
     alertLimit: "⚠️ System Alert (MAX_LIMIT_REACHED):\n\nThe active configuration files have reached the system stability limit (20/20).\n\nTo prevent performance degradation, please destroy unused configurations (.cfg) first.",
@@ -1010,6 +1018,35 @@ function setQuickTerm(months) {
   handleParamChange();
   calculateAll();
 }
+
+/**
+ * 快捷设置贷款名称类型，支持中英文自适应重命名
+ * @param {string} type 贷款类型：'Mortgage' (房贷), 'Auto' (车贷), 'Card' (信用卡), 'Consumer' (消费贷)
+ */
+function setQuickName(type) {
+  if (currentSelectedId === 'summary') return;
+  
+  const loan = loans.find(l => l.id === currentSelectedId);
+  if (!loan) return;
+
+  // 根据当前语言环境自适应翻译名称，英文下进行极致简约的缩写缩字排版
+  let translatedName = '';
+  if (type === 'Mortgage') translatedName = currentLang === 'zh' ? '房贷' : 'Mortgage';
+  else if (type === 'Auto') translatedName = currentLang === 'zh' ? '车贷' : 'Auto';
+  else if (type === 'Card') translatedName = currentLang === 'zh' ? '信用卡' : 'Card';
+  else if (type === 'Consumer') translatedName = currentLang === 'zh' ? '消费贷' : 'Consumer';
+
+  // 1. 同步改写输入框中的值
+  const nameInput = document.getElementById('loanName');
+  if (nameInput) {
+    nameInput.value = translatedName;
+  }
+
+  // 2. 触发参数变动联动与全局重算
+  handleParamChange();
+  calculateAll();
+}
+
 
 // ==========================================
 // 8. 数据新建、删除与清空功能
