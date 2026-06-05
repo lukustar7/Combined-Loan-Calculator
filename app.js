@@ -510,17 +510,10 @@ function calculateAll() {
   });
 
   // 5. 更新全局汇总面板的数据展示，引入千分位金融格式化
-  if (currentLang === 'zh') {
-    // 中文状态下大盘换算为“万元”展现，符合国人阅读习惯，且确保能精确到 1 元起步
-    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal / 10000)} 万元`;
-    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest / 10000)} 万元`;
-    document.getElementById('sumTotal').innerText = `${formatNumber((totalSumPrincipal + totalSumInterest) / 10000)} 万元`;
-  } else {
-    // 英文状态下直接以“元 (¥)”大数加千分位展现，彻底消灭 Wan，完美契合英美用户阅读习惯
-    document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} ¥`;
-    document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} ¥`;
-    document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ¥`;
-  }
+  const unitText = t('unitYuan');
+  document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} ${unitText}`;
+  document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} ${unitText}`;
+  document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ${unitText}`;
   
   if (monthlyAggregated.length > 0) {
     document.getElementById('sumFirstMonth').innerText = `${formatNumber(monthlyAggregated[0].payment)} ${currentLang === 'zh' ? '元' : '¥'}`;
@@ -705,7 +698,7 @@ function renderTrendChart(months, aggregatedData) {
  * 无贷款时的空数据界面渲染
  */
 function renderEmptyState() {
-  const unitText = t('unitWan');
+  const unitText = t('unitYuan');
   document.getElementById('sumPrincipal').innerText = `0.00 ${unitText}`;
   document.getElementById('sumInterest').innerText = `0.00 ${unitText}`;
   document.getElementById('sumTotal').innerText = `0.00 ${unitText}`;
@@ -1109,6 +1102,10 @@ function deleteCurrentLoan() {
   const confirmMsg = t('confirmDelete', { name: loans[loanIndex].name });
   if (confirm(confirmMsg)) {
     loans.splice(loanIndex, 1);
+    // 如果删除后没有贷款，则自动初始化为默认贷款，避免界面空白
+    if (loans.length === 0) {
+      loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+    }
     saveData();
 
     // 回归到全局汇总盘
@@ -1120,11 +1117,12 @@ function deleteCurrentLoan() {
 }
 
 /**
- * 清空系统数据库 (还原到没有任何贷款的纯净状态)
+ * 清空系统数据库 (还原到默认出厂配置状态)
  */
 function clearAllData() {
   if (confirm(t('confirmClear'))) {
-    loans = [];
+    // 清空数据时，重置为一笔默认初始贷款，让系统拥有良好的出厂初始化状态
+    loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
     saveData();
     currentSelectedId = 'summary';
     renderTreeView();
@@ -1387,6 +1385,12 @@ function initApp() {
     }
   } else {
     loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+  }
+
+  // 如果加载出的贷款列表为空（例如之前清空过），则自动初始化为默认贷款，确保系统不留白
+  if (loans.length === 0) {
+    loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+    saveData();
   }
 
   // 确保已存在的数据项拥有提前还款参数 (向下兼容)
