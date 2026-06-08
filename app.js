@@ -1284,12 +1284,8 @@ function setQuickName(type) {
   const loan = loans.find(l => l.id === currentSelectedId);
   if (!loan) return;
 
-  // 根据当前语言环境自适应翻译名称，英文下进行极致简约的缩写缩字排版
-  let translatedName = '';
-  if (type === 'Mortgage') translatedName = currentLang === 'zh' ? '房贷' : 'Mortgage';
-  else if (type === 'Auto') translatedName = currentLang === 'zh' ? '车贷' : 'Auto';
-  else if (type === 'Card') translatedName = currentLang === 'zh' ? '信用卡' : 'Card';
-  else if (type === 'Consumer') translatedName = currentLang === 'zh' ? '消费贷' : 'Consumer';
+  // 利用全局翻译包，完全自适应简体、繁体、英文及日语等所有当前系统语言进行快速填充
+  let translatedName = t(`name${type}`);
 
   // 1. 同步改写输入框中的值
   const nameInput = document.getElementById('loanName');
