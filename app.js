@@ -839,6 +839,106 @@ function renderSummaryTable(data) {
 // ==========================================
 
 /**
+ * 提前还款标记 Chart.js 局部插件
+ * 在发生提前还款的柱体上方，Windows 98 渲染醒目的红色感叹号三角形，Windows Vista 渲染半透明 Aero 玻璃发光球，
+ * 并支持移动端触控及大屏 hover 触发常规 Tooltip 展现提前还款额。
+ */
+const prepaymentMarkerPlugin = {
+  id: 'prepaymentMarker',
+  afterDatasetsDraw(chart, args, options) {
+    const { ctx } = chart;
+    const currentTheme = getGlobalTheme();
+    const aggregatedData = options.aggregatedData;
+    if (!aggregatedData) return;
+
+    chart.data.labels.forEach((dateStr, index) => {
+      const dateRow = aggregatedData[index];
+      if (!dateRow) return;
+
+      // 统计当月这笔月份下所有贷款的提前还款总额
+      let totalPrepay = 0;
+      loans.forEach(loan => {
+        totalPrepay += dateRow.breakdown[loan.id + '_prepay'] || 0;
+      });
+
+      if (totalPrepay > 0) {
+        // 计算除去提前还款额的“常规月供”总和
+        let sumRegularPayment = 0;
+        loans.forEach(loan => {
+          sumRegularPayment += dateRow.breakdown[loan.id] || 0;
+        });
+
+        // 获得该柱子的 X 轴像素坐标
+        const x = chart.scales.x.getPixelForValue(dateStr);
+        // 获得顶部常规还款折合的 Y 轴像素坐标
+        const y = chart.scales.y.getPixelForValue(sumRegularPayment);
+
+        if (isNaN(x) || isNaN(y)) return;
+
+        if (currentTheme === 'vista') {
+          // Vista 主题：精致的半透明 Aero 玻璃圆形发光球
+          ctx.save();
+          const cy = y - 18;
+          
+          // 1. 绘制圆形发光外圈阴影
+          ctx.beginPath();
+          ctx.arc(x, cy, 10, 0, Math.PI * 2);
+          const shadowGrad = ctx.createRadialGradient(x, cy, 5, x, cy, 10);
+          shadowGrad.addColorStop(0, 'rgba(0, 192, 255, 0.4)');
+          shadowGrad.addColorStop(1, 'rgba(0, 192, 255, 0)');
+          ctx.fillStyle = shadowGrad;
+          ctx.fill();
+
+          // 2. 绘制精致的 Vista 圆形小气泡（渐变蓝，带有微白色高光）
+          ctx.beginPath();
+          ctx.arc(x, cy, 7, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(x - 2, cy - 2, 1, x, cy, 7);
+          grad.addColorStop(0, '#ffffff'); // 高光点
+          grad.addColorStop(0.3, '#33b3e2'); // Aero 亮蓝
+          grad.addColorStop(0.8, '#1e528e'); // Aero 深蓝
+          grad.addColorStop(1, '#0e2c56');
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // 半透明亮描边
+          ctx.stroke();
+
+          // 3. 绘制内部白色“P”字母
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px "Segoe UI", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('P', x, cy);
+          ctx.restore();
+        } else {
+          // Windows 98 经典 / 深色主题：经典的复古红色感叹号警告三角形
+          ctx.save();
+          ctx.beginPath();
+          const cy = y - 16;
+          ctx.moveTo(x, cy - 8);     // 顶点
+          ctx.lineTo(x - 8, cy + 6); // 左下
+          ctx.lineTo(x + 8, cy + 6); // 右下
+          ctx.closePath();
+          ctx.fillStyle = '#ff0000'; // 醒目的复古红
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000'; // 边框自适应
+          ctx.stroke();
+          
+          // 绘制内部的小白色惊叹号
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px Tahoma';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('!', x, cy + 1);
+          ctx.restore();
+        }
+      }
+    });
+  }
+};
+
+/**
  * 重新渲染 Chart.js 堆叠趋势图
  * 【Antigravity 顶尖重构】：
  * 1. 深度适配深色/护眼主题！自适应改变坐标轴文字、网格线和 Tooltip 的暗黑配色。
@@ -980,6 +1080,10 @@ function renderTrendChart(months, aggregatedData) {
               return labelText;
             }
           }
+        },
+        // 传递提前还款数据给插件使用
+        prepaymentMarker: {
+          aggregatedData: aggregatedData
         }
       },
       scales: {
@@ -1014,7 +1118,9 @@ function renderTrendChart(months, aggregatedData) {
           }
         }
       }
-    }
+    },
+    // 注册自定义提前还款指示器插件
+    plugins: [prepaymentMarkerPlugin]
   });
 }
 
