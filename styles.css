@@ -896,39 +896,51 @@ body.dark-theme .win-tree-add-btn {
    ========================================== */
 @media (max-width: 768px) {
   body {
-    overflow-y: auto;
-    height: auto;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
   }
   
   .win98-desktop {
-    height: auto;
-    padding-bottom: 40px;
+    height: 100vh;
+    padding-bottom: 28px;
+    overflow: hidden;
   }
   
   .win98-window {
     margin: 3px;
-    height: auto;
-    flex: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   
   .win-explorer-layout {
     flex-direction: column;
-    height: auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
   }
   
   .win-sidebar-tree {
     width: 100%;
-    height: 120px;
+    height: 110px; /* 适当压缩贷款树高度，给主内容区留出空间 */
+    flex-shrink: 0;
     border-bottom: 2px solid var(--win-shadow);
   }
   
   .win-workspace {
-    height: auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   
   .win-tab-content-wrapper {
-    height: auto;
-    min-height: 400px;
+    flex: 1;
+    height: auto; /* 清除默认，依靠 flex 撑满 */
+    min-height: 0;
+    overflow-y: auto;
   }
   
   .win-chart-panel {
@@ -1492,6 +1504,9 @@ body.theme-vista .win-dialog-body {
   }
   body.theme-vista .win98-taskbar {
     height: 40px; /* 给移动端留出充足的触控条厚度 */
+  }
+  body.theme-vista .win98-desktop {
+    padding-bottom: 40px; /* 对应 Vista 任务栏在移动端的 40px 高度 */
   }
 }
 
