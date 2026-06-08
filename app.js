@@ -1036,6 +1036,11 @@ function renderTrendChart(months, aggregatedData) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      // 优化图表交互模式：只要鼠标/手指落在当月柱体的垂直通道内（包括柱体上方的标记点），就能立即激活该列的 Tooltip 详情显示
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       animation: currentTheme === 'vista' ? { duration: 400 } : false, // Vista 主题下开启柔和过度动画，Win98 保持极速渲染
       plugins: {
         legend: {
