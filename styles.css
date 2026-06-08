@@ -1375,6 +1375,11 @@ body.theme-vista .win-start-btn:hover {
   background: radial-gradient(circle at 50% 30%, #4da7ff 0%, #104f9b 70%);
 }
 
+/* 隐藏 Vista 开始按钮中的“开始”文字，仅保留圆形 Logo 徽标 */
+body.theme-vista .win-start-btn span:not(.win-start-logo) {
+  display: none !important;
+}
+
 body.theme-vista .win-start-logo {
   /* 用 CSS 绘制圆形 orb 内部经典的 Vista 蓝绿黄红徽标 */
   width: 18px;
