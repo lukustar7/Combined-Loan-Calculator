@@ -70,7 +70,15 @@ const I18N_DICTS = {
     btnStart: "开始(S)",
     menuNewLoan: "新增贷款文件(.lnk)",
     menuClearAll: "清空所有数据(.sys)",
-    menuTheme: "切换深色主题",
+    menuTheme: "显示属性(D)...",
+    displayTitle: "显示属性",
+    tabAppearance: "外观(A)",
+    lblScheme: "方案(S)：",
+    schemeStandard: "Windows 经典",
+    schemeDark: "经典深色",
+    schemeVista: "Windows Vista",
+    btnApply: "应用(A)",
+    btnCancel: "取消",
     menuLang: "English / 中文",
     menuGitHub: "访问 GitHub 仓库",
     menuAbout: "关于本软件...",
@@ -146,7 +154,15 @@ const I18N_DICTS = {
     btnStart: "Start(S)",
     menuNewLoan: "Create New Loan (.lnk)",
     menuClearAll: "Purge All Data (.sys)",
-    menuTheme: "Toggle Dark Theme",
+    menuTheme: "Display Properties(D)...",
+    displayTitle: "Display Properties",
+    tabAppearance: "Appearance",
+    lblScheme: "Scheme: ",
+    schemeStandard: "Windows Standard",
+    schemeDark: "Windows Dark",
+    schemeVista: "Windows Vista",
+    btnApply: "Apply",
+    btnCancel: "Cancel",
     menuLang: "中文 / English",
     menuGitHub: "Visit GitHub Repo",
     menuAbout: "About Multi-Loan 98...",
@@ -581,16 +597,16 @@ function renderTrendChart(months, aggregatedData) {
 
   if (loans.length === 0 || months.length === 0) return;
 
-  // 检测当前是否启用了深色皮肤，以此动态适配坐标轴颜色
-  const isDark = document.body.classList.contains('dark-theme');
-  const textColor = isDark ? '#e0e0e0' : '#000000';
-  const gridColor = isDark ? '#4a4a5a' : '#808080';
-  const gridBorderColor = isDark ? '#5a5a6a' : '#000000';
-  const tooltipBg = isDark ? '#1a1a2a' : '#ffffcc';
-  const tooltipText = isDark ? '#ffffff' : '#000000';
-
-  // 为不同的贷款准备不同的微软经典 Windows 98 主题色彩
-  const retroColors = [
+  // 根据当前激活的全局主题动态适配图表配色与字体
+  const currentTheme = getGlobalTheme();
+  
+  let textColor = '#000000';
+  let gridColor = '#808080';
+  let gridBorderColor = '#000000';
+  let tooltipBg = '#ffffcc';
+  let tooltipText = '#000000';
+  let fontName = 'Tahoma';
+  let retroColors = [
     { fill: '#000080', border: '#000000' }, // 经典微软深蓝
     { fill: '#008000', border: '#000000' }, // 经典森林绿
     { fill: '#800000', border: '#000000' }, // 经典铁锈红
@@ -598,6 +614,37 @@ function renderTrendChart(months, aggregatedData) {
     { fill: '#008080', border: '#000000' }, // 青绿色
     { fill: '#808000', border: '#000000' }  // 暗金泥土黄
   ];
+
+  if (currentTheme === 'dark') {
+    textColor = '#e0e0e0';
+    gridColor = '#4a4a5a';
+    gridBorderColor = '#5a5a6a';
+    tooltipBg = '#1a1a2a';
+    tooltipText = '#ffffff';
+    retroColors = [
+      { fill: '#3366ff', border: '#1a1a6e' },
+      { fill: '#2ebd44', border: '#0a6a0a' },
+      { fill: '#ff4b4b', border: '#6a0a0a' },
+      { fill: '#b800b8', border: '#6a0a6a' },
+      { fill: '#00b8b8', border: '#0a6a6a' },
+      { fill: '#b8b800', border: '#6a6a0a' }
+    ];
+  } else if (currentTheme === 'vista') {
+    textColor = '#1d2530';
+    gridColor = 'rgba(0, 0, 0, 0.08)'; // 轻柔淡雅的灰色网格线
+    gridBorderColor = 'rgba(0, 0, 0, 0.15)';
+    tooltipBg = 'rgba(255, 255, 255, 0.9)'; // 高档半透明白
+    tooltipText = '#1d2530';
+    fontName = '"Segoe UI", "Microsoft YaHei", -apple-system, sans-serif';
+    retroColors = [
+      { fill: 'rgba(30, 82, 142, 0.75)', border: 'rgba(30, 82, 142, 0.9)' }, // Vista Aero 蓝
+      { fill: 'rgba(38, 124, 139, 0.75)', border: 'rgba(38, 124, 139, 0.9)' }, // Vista 青绿
+      { fill: 'rgba(140, 42, 78, 0.75)', border: 'rgba(140, 42, 78, 0.9)' }, // Vista 玫瑰红
+      { fill: 'rgba(216, 112, 147, 0.75)', border: 'rgba(216, 112, 147, 0.9)' }, // 浅蔷薇红
+      { fill: 'rgba(100, 149, 237, 0.75)', border: 'rgba(100, 149, 237, 0.9)' }, // 矢车菊蓝
+      { fill: 'rgba(46, 139, 87, 0.75)', border: 'rgba(46, 139, 87, 0.9)' } // 海洋绿
+    ];
+  }
 
   // 生成 Chart.js 所需的条形堆叠数据集
   const datasets = loans.map((loan, index) => {
@@ -613,14 +660,14 @@ function renderTrendChart(months, aggregatedData) {
       data: dataPoints,
       backgroundColor: color.fill,
       borderColor: color.border,
-      borderWidth: 1.5,
-      barPercentage: 1.0,         // 让柱子挨得极紧，形成连贯的复古“性能监视器”网格效果
-      categoryPercentage: 1.0,
+      borderWidth: currentTheme === 'vista' ? 1.0 : 1.5,
+      barPercentage: currentTheme === 'vista' ? 0.85 : 1.0, // Vista 下柱子略微拉开间距，显得优雅现代
+      categoryPercentage: currentTheme === 'vista' ? 0.85 : 1.0,
       stack: 'combinedStack'      // 启动堆叠模式
     };
   });
 
-  // 创建极具 Windows 98 “系统监视器”质感的像素图表配置
+  // 创建符合当前系统皮肤质感的像素/现代图表配置
   trendChart = new Chart(ctx, {
     type: 'bar', // 柱状堆叠图
     data: {
@@ -630,12 +677,12 @@ function renderTrendChart(months, aggregatedData) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false, // 彻底关闭现代过渡动画，追求 1998 年极速渲染的硬核像素风格
+      animation: currentTheme === 'vista' ? { duration: 400 } : false, // Vista 主题下开启柔和过度动画，Win98 保持极速渲染
       plugins: {
         legend: {
           position: 'top',
           labels: {
-            font: { family: 'Tahoma', size: 11, weight: 'bold' },
+            font: { family: fontName, size: 11, weight: 'bold' },
             color: textColor, // 自适应文字颜色
             boxWidth: 12,
             boxHeight: 12,
@@ -643,14 +690,14 @@ function renderTrendChart(months, aggregatedData) {
           }
         },
         tooltip: {
-          backgroundColor: tooltipBg, // Windows 98 经典黄色工具提示框 (深色下自适应为暗盒)
+          backgroundColor: tooltipBg, // Windows 98 经典黄色工具提示框 (深色和 Vista 下自适应)
           titleColor: tooltipText,
-          titleFont: { family: 'Tahoma', size: 11, weight: 'bold' },
+          titleFont: { family: fontName, size: 11, weight: 'bold' },
           bodyColor: tooltipText,
-          bodyFont: { family: 'Tahoma', size: 11 },
-          borderColor: isDark ? '#5a5a6a' : '#000000',
+          bodyFont: { family: fontName, size: 11 },
+          borderColor: currentTheme === 'vista' ? 'rgba(0,0,0,0.15)' : (currentTheme === 'dark' ? '#5a5a6a' : '#000000'),
           borderWidth: 1,
-          cornerRadius: 0, // 坚挺的硬核直角边框
+          cornerRadius: currentTheme === 'vista' ? 4 : 0, // Vista 主题下气泡有小圆角
           callbacks: {
             label: function(context) {
               return ` ${context.dataset.label}: ${formatNumber(context.raw)} ${currentLang === 'zh' ? '元' : '¥'}`;
@@ -663,12 +710,12 @@ function renderTrendChart(months, aggregatedData) {
           stacked: true,
           grid: {
             color: gridColor, // 复古点状像素虚线网格线
-            borderDash: [1, 2],
+            borderDash: currentTheme === 'vista' ? [] : [1, 2], // Vista 下为实线
             drawBorder: true,
             borderColor: gridBorderColor
           },
           ticks: {
-            font: { family: 'Tahoma', size: 10 },
+            font: { family: fontName, size: 10 },
             color: textColor,
             maxTicksLimit: window.innerWidth < 768 ? 8 : 24 // 手机端自适应抽样，防止文字堆叠挤爆
           }
@@ -677,12 +724,12 @@ function renderTrendChart(months, aggregatedData) {
           stacked: true,
           grid: {
             color: gridColor,
-            borderDash: [1, 2],
+            borderDash: currentTheme === 'vista' ? [] : [1, 2],
             drawBorder: true,
             borderColor: gridBorderColor
           },
           ticks: {
-            font: { family: 'Tahoma', size: 10 },
+            font: { family: fontName, size: 10 },
             color: textColor,
             callback: function(value) {
               return formatNumber(value) + (currentLang === 'zh' ? '元' : '¥');
@@ -1310,12 +1357,82 @@ function minimizeOrRestoreMainWindow() {
   }
 }
 
-// 切换 Windows 98 经典亮色主题与复古黑客深色主题
-function toggleDarkTheme() {
-  const isDark = document.body.classList.toggle('dark-theme');
-  localStorage.setItem('WIN98_DARK_THEME', isDark ? 'true' : 'false');
+// 控制“显示属性”弹窗显示或隐藏
+function showDisplayProperties(show) {
+  const overlay = document.getElementById('displayPropertiesOverlay');
+  if (!overlay) return;
+  // 切换弹窗的 flex 布局显示状态
+  overlay.style.display = show ? 'flex' : 'none';
   
-  // 零延迟重算并重绘图表，实现深色皮肤自动刷新
+  if (show) {
+    // 弹窗打开时，初始化下拉框选中的当前全局主题
+    const currentTheme = getGlobalTheme();
+    const selectEl = document.getElementById('themeSelect');
+    if (selectEl) {
+      selectEl.value = currentTheme;
+    }
+    // 并更新预览区的局部样式
+    updatePreviewTheme(currentTheme);
+  }
+}
+
+// 获取当前的全局主题，默认为 'standard'
+function getGlobalTheme() {
+  const savedTheme = localStorage.getItem('WIN_THEME_PREF');
+  if (savedTheme === 'vista' || savedTheme === 'dark' || savedTheme === 'standard') {
+    return savedTheme;
+  }
+  // 向后兼容旧版本的深色模式配置
+  const oldDark = localStorage.getItem('WIN98_DARK_THEME');
+  return oldDark === 'true' ? 'dark' : 'standard';
+}
+
+// 预览区局部主题变更事件句柄
+function handlePreviewThemeChange() {
+  const selectEl = document.getElementById('themeSelect');
+  if (selectEl) {
+    updatePreviewTheme(selectEl.value);
+  }
+}
+
+// 更新预览容器的 class，实现仅在预览框里渲染所选皮肤的效果
+function updatePreviewTheme(themeName) {
+  const container = document.getElementById('displayPreviewContainer');
+  if (!container) return;
+  // 清除所有的局部预览主题样式
+  container.classList.remove('theme-standard', 'theme-dark', 'theme-vista');
+  // 挂载所选的局部预览主题样式
+  container.classList.add(`theme-${themeName}`);
+}
+
+// 显示属性确定按钮回调：保存并应用全局主题，然后关闭窗口
+function confirmThemeSelection() {
+  applyThemeSelection();
+  showDisplayProperties(false);
+}
+
+// 核心应用逻辑：将主题应用于全局 body，更新 LocalStorage 缓存，并实时重绘图表与计算
+function applyThemeSelection() {
+  const selectEl = document.getElementById('themeSelect');
+  if (!selectEl) return;
+  const targetTheme = selectEl.value;
+  
+  // 1. 全局清理已有的主题类
+  document.body.classList.remove('theme-standard', 'theme-dark', 'theme-vista', 'dark-theme');
+  
+  // 2. 挂载新的主题类
+  document.body.classList.add(`theme-${targetTheme}`);
+  
+  // 3. 为了向下兼容原有的部分 CSS 选择器，如果是经典深色主题，则同步挂载 .dark-theme
+  if (targetTheme === 'dark') {
+    document.body.classList.add('dark-theme');
+  }
+  
+  // 4. 将最新主题偏好保存至浏览器 LocalStorage
+  localStorage.setItem('WIN_THEME_PREF', targetTheme);
+  localStorage.setItem('WIN98_DARK_THEME', targetTheme === 'dark' ? 'true' : 'false');
+  
+  // 5. 触发零延迟重算并重绘 Chart.js 图表
   calculateAll();
 }
 
@@ -1367,12 +1484,12 @@ function initApp() {
     }
   }
 
-  // 加载主题皮肤偏好
-  const savedTheme = localStorage.getItem('WIN98_DARK_THEME');
-  if (savedTheme === 'true') {
+  // 加载主题皮肤偏好，支持新版多皮肤架构
+  const currentTheme = getGlobalTheme();
+  document.body.classList.remove('theme-standard', 'theme-dark', 'theme-vista', 'dark-theme');
+  document.body.classList.add(`theme-${currentTheme}`);
+  if (currentTheme === 'dark') {
     document.body.classList.add('dark-theme');
-  } else {
-    document.body.classList.remove('dark-theme');
   }
 
   // 加载缓存数据

@@ -982,3 +982,484 @@ body.dark-theme .win-tree-add-btn {
     font-size: 13px;
   }
 }
+
+/* ==========================================
+   显示属性 (Display Properties) 与预览器
+   ========================================== */
+.win-preview-container {
+  width: 100%;
+  height: 150px;
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.win-preview-desktop {
+  width: 100%;
+  height: 100%;
+  background-color: #008080; /* 默认 98 经典青 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.win-preview-window {
+  width: 180px;
+  height: 105px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+}
+
+.win-preview-titlebar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.win-preview-titlebar-icon {
+  margin-right: 2px;
+}
+
+.win-preview-titlebar-btn {
+  font-size: 8px;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 8px;
+}
+
+.win-preview-workspace {
+  flex: 1;
+  background-color: #d4d0c8;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.win-preview-text {
+  font-size: 9px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.win-preview-btn {
+  font-size: 8px;
+  padding: 1px 6px;
+  background-color: #d4d0c8;
+  border: 1.5px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  color: #000000;
+  outline: none;
+}
+
+/* 局部预览：经典深色 */
+.win-preview-container.theme-dark .win-preview-desktop {
+  background-color: #1a1a2e;
+}
+.win-preview-container.theme-dark .win-preview-window {
+  border-color: #5a5a6a #1a1a2a #1a1a2a #5a5a6a;
+  background-color: #3a3a4a;
+}
+.win-preview-container.theme-dark .win-preview-titlebar {
+  background: linear-gradient(90deg, #1a1a6e, #3060b0);
+}
+.win-preview-container.theme-dark .win-preview-workspace {
+  background-color: #3a3a4a;
+}
+.win-preview-container.theme-dark .win-preview-text {
+  color: #e0e0e0;
+}
+.win-preview-container.theme-dark .win-preview-btn {
+  background-color: #3a3a4a;
+  color: #e0e0e0;
+  border-color: #5a5a6a #1a1a2a #1a1a2a #5a5a6a;
+}
+
+/* 局部预览：Vista Aero */
+.win-preview-container.theme-vista .win-preview-desktop {
+  background: radial-gradient(circle at 15% 15%, rgba(38, 124, 139, 0.9) 0%, transparent 65%),
+              radial-gradient(circle at 85% 15%, rgba(140, 42, 78, 0.8) 0%, transparent 55%),
+              radial-gradient(circle at 50% 85%, rgba(30, 82, 142, 1) 0%, transparent 75%),
+              #1d528f;
+  background-size: cover;
+}
+.win-preview-container.theme-vista .win-preview-window {
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.win-preview-container.theme-vista .win-preview-titlebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%);
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  color: #0b1a2d;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+.win-preview-container.theme-vista .win-preview-titlebar-btn {
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f57f7f 0%, #c01a1a 100%);
+  border-color: #7a1010;
+}
+.win-preview-container.theme-vista .win-preview-workspace {
+  background: rgba(255, 255, 255, 0.65);
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.win-preview-container.theme-vista .win-preview-text {
+  color: #1d2530;
+  font-family: "Segoe UI", sans-serif;
+}
+.win-preview-container.theme-vista .win-preview-btn {
+  background: linear-gradient(180deg, #f2f2f2 0%, #cfcfcf 100%);
+  border: 1px solid #707070;
+  border-radius: 2.5px;
+  color: #1d2530;
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+/* ==========================================
+   Windows Vista Aero 玻璃全局主题类
+   ========================================== */
+body.theme-vista {
+  background: radial-gradient(circle at 10% 10%, rgba(38, 124, 139, 0.9) 0%, transparent 60%),
+              radial-gradient(circle at 90% 10%, rgba(140, 42, 78, 0.8) 0%, transparent 50%),
+              radial-gradient(circle at 50% 90%, rgba(30, 82, 142, 1) 0%, transparent 70%),
+              #1d528f;
+  background-size: cover;
+  --win-gray: rgba(220, 230, 240, 0.45);
+  --win-face: rgba(220, 230, 240, 0.55);
+  --win-highlight: rgba(255, 255, 255, 0.65);
+  --win-shadow: rgba(0, 0, 0, 0.15);
+  --win-black: rgba(0, 0, 0, 0.25);
+  --win-text: #1d2530;
+  --win-text-disabled: rgba(100, 110, 120, 0.6);
+  --win-blue-dark: rgba(30, 82, 142, 0.85);
+  --win-blue-light: rgba(38, 124, 139, 0.75);
+  --win-gray-dark: rgba(120, 135, 150, 0.5);
+  --win-gray-light: rgba(240, 245, 250, 0.8);
+  --win-white: #ffffff;
+  --win-box-bg: rgba(255, 255, 255, 0.75);
+  --win-text-muted: #4e5d6c;
+  --win-font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+  font-family: var(--win-font);
+}
+
+/* 局部元素覆盖：Vista Aero */
+body.theme-vista .win-outset {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  background: rgba(235, 242, 250, 0.45);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+body.theme-vista .win-inset {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.06);
+}
+
+body.theme-vista .win-titlebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.05) 50.1%, rgba(0,0,0,0.1) 100%);
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+  color: #0b1a2d;
+  height: 24px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+body.theme-vista .win-titlebar-btn {
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.05) 50.1%, rgba(255,255,255,0.1) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+  width: 18px;
+  height: 18px;
+}
+
+body.theme-vista .win-titlebar-btn:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
+}
+
+body.theme-vista .win-titlebar-btn.close-btn {
+  background: linear-gradient(180deg, #f57f7f 0%, #e03030 50%, #c01a1a 50.1%, #d02020 100%);
+  color: #ffffff;
+  border-color: #7a1010;
+  text-shadow: none;
+}
+
+body.theme-vista .win-titlebar-btn.close-btn:hover {
+  background: linear-gradient(180deg, #ff9f9f 0%, #ff5050 50%, #e02020 50.1%, #f03030 100%);
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+}
+
+body.theme-vista .win-btn {
+  border: 1px solid #707070;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f3f3f3 0%, #ebebeb 50%, #dddddd 50.1%, #cfcfcf 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.08);
+  padding: 4px 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+body.theme-vista .win-btn:hover:not(:disabled) {
+  border-color: #3c7fb1;
+  background: linear-gradient(180deg, #eaf6fd 0%, #d9f0fc 50%, #bee6fd 50.1%, #a7d9f5 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 0 4px rgba(60, 127, 177, 0.4);
+}
+
+body.theme-vista .win-btn:active:not(:disabled) {
+  border-color: #2c628b;
+  background: linear-gradient(180deg, #e0f3fc 0%, #c4e8fa 50%, #9dd5f3 50.1%, #79bee7 100%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+  padding: 4px 14px;
+}
+
+body.theme-vista .win-input, 
+body.theme-vista .win-select {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.85);
+  height: 24px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+body.theme-vista .win-input:focus, 
+body.theme-vista .win-select:focus {
+  border-color: #3c7fb1;
+  box-shadow: 0 0 4px rgba(60, 127, 177, 0.3);
+}
+
+body.theme-vista .win-tab-content-wrapper {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0 0 5px 5px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.theme-vista .win-tabs {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+body.theme-vista .win-tab {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background-color: rgba(240, 245, 250, 0.5);
+  margin-bottom: -1px;
+}
+
+body.theme-vista .win-tab.active {
+  background-color: rgba(255, 255, 255, 0.65);
+  border-color: rgba(0, 0, 0, 0.12);
+  border-bottom-color: transparent;
+  font-weight: bold;
+}
+
+body.theme-vista .win-group-box {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.theme-vista .win-group-box-title {
+  background-color: transparent;
+  color: #1e528e;
+}
+
+body.theme-vista .win-summary-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+body.theme-vista .win-summary-card .value {
+  color: #1e528e;
+}
+
+body.theme-vista .win-table th {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+body.theme-vista .win-table td {
+  border-right: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+body.theme-vista .win-table tr:nth-child(even) {
+  background-color: rgba(240, 245, 250, 0.3);
+}
+
+/* Vista 任务栏与开始按钮适配 */
+body.theme-vista .win98-taskbar {
+  background: rgba(10, 15, 25, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  height: 34px; /* 让 Vista 任务栏稍厚一些，更能包容圆形 Orb */
+}
+
+body.theme-vista .win-task-items {
+  margin-left: 12px;
+}
+
+body.theme-vista .win-task-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  height: 26px;
+  box-shadow: none;
+}
+
+body.theme-vista .win-task-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+body.theme-vista .win-task-btn.active {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+  padding: 2px 6px;
+}
+
+body.theme-vista .win-start-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  background: radial-gradient(circle at 50% 30%, #3085d6 0%, #0c3e7b 70%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  bottom: 4px;
+  transition: all 0.3s cubic-bezier(0.1, 0.8, 0.2, 1);
+  flex-shrink: 0;
+}
+
+body.theme-vista .win-start-btn:hover {
+  box-shadow: 0 0 14px rgba(48, 133, 214, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: radial-gradient(circle at 50% 30%, #4da7ff 0%, #104f9b 70%);
+}
+
+body.theme-vista .win-start-logo {
+  /* 用 CSS 绘制圆形 orb 内部经典的 Vista 蓝绿黄红徽标 */
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff4b4b 0deg 90deg, 
+    #4bff4b 90deg 180deg, 
+    #4b4bff 180deg 270deg, 
+    #ffff4b 270deg 360deg
+  );
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.3);
+  filter: saturate(1.2);
+}
+
+body.theme-vista .win-start-logo::after {
+  display: none; /* 去除 Win98 的伪元素 */
+}
+
+body.theme-vista .win-systray {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #ffffff;
+  height: 26px;
+}
+
+body.theme-vista .win-start-menu {
+  background: rgba(20, 25, 35, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  bottom: 40px;
+}
+
+body.theme-vista .win-start-menu-sidebar {
+  /* 去除 98 的竖向蓝条，改为 Vista 优雅的左侧面板 */
+  background: linear-gradient(180deg, rgba(30, 82, 142, 0.5), rgba(10, 15, 25, 0.8));
+  border-radius: 5px 0 0 5px;
+}
+
+body.theme-vista .win-start-menu-item {
+  color: #eeeeee;
+  border-radius: 3px;
+  margin: 1px 4px;
+}
+
+body.theme-vista .win-start-menu-item:hover {
+  background: linear-gradient(90deg, rgba(48, 133, 214, 0.8) 0%, rgba(48, 133, 214, 0.3) 100%);
+  color: #ffffff;
+}
+
+body.theme-vista .win-start-menu-divider {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+body.theme-vista .win-dialog {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  background: rgba(235, 242, 250, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+body.theme-vista .win-dialog-body {
+  color: #1d2530;
+}
+
+/* Vista 移动端安全适配覆盖 */
+@media (max-width: 768px) {
+  body.theme-vista .win-outset {
+    border-radius: 4px; /* 在移动端稍微减小圆角，显得更加紧凑 */
+  }
+  body.theme-vista .win-sidebar-tree {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+  body.theme-vista .win-start-btn {
+    bottom: 0px; /* 移动端不要悬浮得太突兀 */
+  }
+  body.theme-vista .win98-taskbar {
+    height: 40px; /* 给移动端留出充足的触控条厚度 */
+  }
+}
+

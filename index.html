@@ -283,8 +283,8 @@
           🗑️ <span data-i18n="menuClearAll">清空所有数据(.sys)</span>
         </div>
         <div class="win-start-menu-divider"></div>
-        <div class="win-start-menu-item" onclick="toggleDarkTheme(); toggleStartMenu();">
-          🌙 <span data-i18n="menuTheme">切换深色主题</span>
+        <div class="win-start-menu-item" onclick="showDisplayProperties(true); toggleStartMenu();">
+          🖥️ <span data-i18n="menuTheme">显示属性(D)...</span>
         </div>
         <div class="win-start-menu-item" onclick="toggleLanguage(); toggleStartMenu();">
           🌐 <span data-i18n="menuLang">English / 中文</span>
@@ -319,6 +319,59 @@
         </div>
         <div class="win-dialog-footer">
           <button class="win-btn" onclick="closeAboutDialog()" style="width: 70px;" data-i18n="btnOK">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 显示属性弹窗 -->
+    <div class="win-dialog-overlay" id="displayPropertiesOverlay" style="display: none;" onclick="showDisplayProperties(false)">
+      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 360px;">
+        <div class="win-titlebar">
+          <div class="win-titlebar-title" data-i18n="displayTitle">显示属性</div>
+          <div class="win-titlebar-controls">
+            <button class="win-titlebar-btn close-btn" onclick="showDisplayProperties(false)">✖</button>
+          </div>
+        </div>
+        
+        <div class="win-tab-container" style="padding: 6px;">
+          <div class="win-tabs">
+            <button class="win-tab active" data-i18n="tabAppearance">外观(A)</button>
+          </div>
+          
+          <div class="win-tab-content-wrapper" style="padding: 10px; gap: 10px; overflow: visible;">
+            <!-- 经典显示器预览框 -->
+            <div class="win-preview-container win-inset" id="displayPreviewContainer">
+              <div class="win-preview-desktop">
+                <div class="win-preview-window win-outset">
+                  <div class="win-preview-titlebar">
+                    <span class="win-preview-titlebar-icon">📁</span>
+                    <span class="win-preview-titlebar-title">Active Window</span>
+                    <span class="win-preview-titlebar-btn">✖</span>
+                  </div>
+                  <div class="win-preview-workspace">
+                    <span class="win-preview-text">Segoe UI</span>
+                    <button class="win-preview-btn">OK</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 方案选择器 -->
+            <div class="win-field-row" style="margin-top: 8px;">
+              <label for="themeSelect" style="width: 65px; text-align: left;" data-i18n="lblScheme">方案(S)：</label>
+              <select id="themeSelect" class="win-select" style="flex: 1;" onchange="handlePreviewThemeChange()">
+                <option value="standard" data-i18n="schemeStandard">Windows 经典</option>
+                <option value="dark" data-i18n="schemeDark">经典深色</option>
+                <option value="vista" data-i18n="schemeVista">Windows Vista</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 6px 10px 10px;">
+          <button class="win-btn" onclick="confirmThemeSelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
+          <button class="win-btn" onclick="showDisplayProperties(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
+          <button class="win-btn" onclick="applyThemeSelection()" style="width: 75px;" id="btnApplyTheme" data-i18n="btnApply">应用(A)</button>
         </div>
       </div>
     </div>
