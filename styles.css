@@ -1421,6 +1421,27 @@ body.theme-vista .win-start-menu-sidebar {
   /* 去除 98 的竖向蓝条，改为 Vista 优雅的左侧面板 */
   background: linear-gradient(180deg, rgba(30, 82, 142, 0.5), rgba(10, 15, 25, 0.8));
   border-radius: 5px 0 0 5px;
+  font-size: 0; /* 彻底消隐原有的 Windows 98 文本 */
+  color: transparent;
+  position: relative;
+  width: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* 在 Vista 模式下，将侧边栏的装饰文本升级为 Windows Vista 旋转字样 */
+body.theme-vista .win-start-menu-sidebar::after {
+  content: "Windows Vista";
+  font-size: 11px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.65);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  margin-bottom: 10px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0.5px;
 }
 
 body.theme-vista .win-start-menu-item {
