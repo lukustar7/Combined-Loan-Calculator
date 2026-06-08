@@ -1428,6 +1428,9 @@ body.theme-vista .win-start-menu-sidebar {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  /* 彻底消除 Win98 原有的 transform 旋转叠加影响，防止子元素发生定位错乱 */
+  transform: none !important;
+  writing-mode: horizontal-tb !important;
 }
 
 /* 在 Vista 模式下，将侧边栏的装饰文本升级为 Windows Vista 旋转字样 */
