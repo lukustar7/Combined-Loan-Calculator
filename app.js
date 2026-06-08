@@ -730,9 +730,17 @@ function calculateAll() {
         monthlyInterest += matchingRow.interest;
         monthlyRemainingSum += matchingRow.remaining;
         activeLoanNames.push(item.loanName);
-        breakdown[item.loanId] = matchingRow.payment;
+        
+        // 【优化图表趋势坐标轴】：为避免大额提前还款撑大 Y 轴导致月供趋势压扁看不清，
+        // 图表柱体高度仅计入当期“常规月供”（即减去当期提前还款额后的部分）
+        const regularPayment = matchingRow.payment - (matchingRow.prepay || 0);
+        breakdown[item.loanId] = regularPayment;
+        
+        // 另外记录提前还款额，以便在图表的交互提示（Tooltip）中进行特制化高保真展示
+        breakdown[item.loanId + '_prepay'] = matchingRow.prepay || 0;
       } else {
         breakdown[item.loanId] = 0;
+        breakdown[item.loanId + '_prepay'] = 0;
         // 如果这笔贷款还没开始，或者已经还完，查找它在当月之前的最后一期剩余本金，或者如果还没开始就是总额
         const isStarted = item.schedule.some(row => row.dateStr < dateStr);
         if (isStarted) {
@@ -907,6 +915,7 @@ function renderTrendChart(months, aggregatedData) {
 
     return {
       label: loan.name,
+      loanId: loan.id, // 额外保存 loanId，以便 tooltip 能精准匹配其 prepay 值
       data: dataPoints,
       backgroundColor: color.fill,
       borderColor: color.border,
@@ -950,7 +959,25 @@ function renderTrendChart(months, aggregatedData) {
           cornerRadius: currentTheme === 'vista' ? 4 : 0, // Vista 主题下气泡有小圆角
           callbacks: {
             label: function(context) {
-              return ` ${context.dataset.label}: ${formatNumber(context.raw)} ${currentLang === 'zh' ? '元' : '¥'}`;
+              const loanId = context.dataset.loanId;
+              const rawVal = context.raw;
+              const dateRow = aggregatedData[context.dataIndex];
+              const prepayVal = (dateRow && dateRow.breakdown) ? (dateRow.breakdown[loanId + '_prepay'] || 0) : 0;
+              
+              let labelText = ` ${context.dataset.label}: ${formatNumber(rawVal)} ${currentLang === 'zh' ? '元' : '¥'}`;
+              if (prepayVal > 0) {
+                // 如果当月有提前还款，在 Tooltip 中增加贴心标注
+                if (currentLang === 'zh') {
+                  labelText += ` (当月另有提前还款 ${formatNumber(prepayVal)} 元)`;
+                } else if (currentLang === 'zh-HK') {
+                  labelText += ` (當月另有提前還款 ${formatNumber(prepayVal)} 元)`;
+                } else if (currentLang === 'ja') {
+                  labelText += ` (当月に繰上返済 ${formatNumber(prepayVal)} 円あり)`;
+                } else {
+                  labelText += ` (extra prepayment of ${formatNumber(prepayVal)} ¥)`;
+                }
+              }
+              return labelText;
             }
           }
         }
