@@ -79,12 +79,13 @@ const I18N_DICTS = {
     schemeVista: "Windows Vista",
     btnApply: "应用(A)",
     btnCancel: "取消",
-    menuLang: "English / 中文",
-    menuGitHub: "访问 GitHub 仓库",
-    menuAbout: "关于本软件...",
+    menuLang: "区域和语言设置(L)...",
+    langTitle: "区域和语言设置",
+    tabRegional: "区域设置(R)",
+    lblLangSelect: "请选择系统所使用的语言和区域格式：",
     aboutTitle: "关于贷款组合管理器",
-    aboutVersion: "版本号：v2.0.0",
-    aboutDesc: "通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、深色主题与多语言切换。",
+    aboutVersion: "版本号：v2.1.0",
+    aboutDesc: "通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、显示属性与多语言切换。",
     aboutCopy: "著作权所有 (C) 1998 - 2026.",
     btnOK: "确定",
     btn5Yr: "5年",
@@ -106,6 +107,91 @@ const I18N_DICTS = {
     planPlaceholder: "请输入完整有效的数值，以生成还款计划。",
     closeMsg: "Windows 98 不建议您关闭主窗口！您可以点击最小化将其放入任务栏。",
     prepayLabel: " (含提前还款 {amount} 元)"
+  },
+  "zh-HK": {
+    windowTitle: "我的電腦 - 貸款組合管理器.exe",
+    labelTotalPrincipal: "貸款總額",
+    labelTotalInterest: "應還總利息",
+    labelTotalSum: "累計本息合計",
+    labelFirstMonth: "首月還款額",
+    labelPeakMonth: "最高月供月份",
+    chartTitle: "系統性能監視器 - 未來月供趨勢圖表",
+    mergedTableTitle: "合並月度還款計劃總表",
+    btnExportCSV: "導出 CSV",
+    thDate: "還款年月",
+    thPayment: "月供總額(元)",
+    thPrincipal: "本金總額(元)",
+    thInterest: "利息總額(元)",
+    thRemaining: "剩餘本金(元)",
+    thActive: "活躍貸款",
+    tabParams: "基本參數(P)",
+    tabPlan: "還款計劃表(L)",
+    groupLoanConfig: "貸款基本屬性配置",
+    lblName: "貸款名稱：",
+    lblAmount: "貸款金額：",
+    unitYuan: "元",
+    lblRate: "年化利率：",
+    lblMethod: "還款方式：",
+    methodACPI: "等額本息",
+    methodACP: "等額本金",
+    lblTerm: "貸款期限：",
+    unitMonth: "個月",
+    lblStart: "首次還款：",
+    lblYear: "年",
+    lblMonthUnit: "月",
+    groupPrepay: "提前還款模擬 (可選)",
+    lblPrepayPeriod: "在第幾期：",
+    lblPeriodUnit: "期後",
+    lblPrepayAmount: "還款金額：",
+    groupQuickView: "本筆貸款計算速覽",
+    lblDetailTotal: "本筆本息合計",
+    lblDetailInterest: "本筆應付利息",
+    lblDetailFirst: "首月應還月供",
+    btnDelete: "銷毀本筆貸款.lnk",
+    thPeriod: "期數",
+    thMonthPay: "當月月供(元)",
+    thMonthPrincipal: "償還本金(元)",
+    thMonthInterest: "償還利息(元)",
+    btnStart: "開始(S)",
+    menuNewLoan: "新增貸款文件(.lnk)",
+    menuClearAll: "清空所有數據(.sys)",
+    menuTheme: "顯示屬性(D)...",
+    displayTitle: "顯示屬性",
+    tabAppearance: "外觀(A)",
+    lblScheme: "方案(S)：",
+    schemeStandard: "Windows 經典",
+    schemeDark: "經典深色",
+    schemeVista: "Windows Vista",
+    btnApply: "應用(A)",
+    btnCancel: "取消",
+    menuLang: "區域和語言設置(L)...",
+    langTitle: "區域和語言設置",
+    tabRegional: "區域設置(R)",
+    lblLangSelect: "請選擇系統所使用的語言和區域格式：",
+    aboutTitle: "關於貸款組合管理器",
+    aboutVersion: "版本號：v2.1.0",
+    aboutDesc: "通用多筆債務合並分析工具。零按鈕實時重算，支持提前還款模擬、CSV 導出、顯示屬性與多語言切換。",
+    aboutCopy: "著作權所有 (C) 1998 - 2026.",
+    btnOK: "確定",
+    btn5Yr: "5年",
+    btn10Yr: "10年",
+    btn20Yr: "20年",
+    btn30Yr: "30年",
+    nameMortgage: "房貸",
+    nameAuto: "車貸",
+    nameCard: "信用卡",
+    nameConsumer: "消費貸",
+    
+    // JS 端特有提示信息
+    alertLimit: "⚠️ 系統警報 (MAX_LIMIT_REACHED):\n\n當前裝載的配置文件已達系統穩定運行上限 (20/20)。\n\n為避免系統性能過度損耗，請先銷毀不必要的配置文件 (.cfg) 後再行創建。",
+    confirmDelete: "您確實要永久銷毀並刪除配置文件 \"{name}.cfg\" 嗎？此操作無法撤銷。",
+    confirmClear: "⚠️ 警告：您即將清除系統中的所有貸款配置文件。該操作將清空本地瀏覽器緩存（LocalStorage）。\n\n是否繼續？",
+    loanDefaultName: "貸款",
+    unnamedLoan: "未命名貸款",
+    emptyStateText: "未發現活躍的配置文件。請在左側點擊“新增貸款...”創建您的第一筆貸款配置。",
+    planPlaceholder: "請輸入完整有效的數值，以生成還款計劃。",
+    closeMsg: "Windows 不建議您關閉主窗口！您可以點擊最小化將其放入任務欄。",
+    prepayLabel: " (含提前還款 {amount} 元)"
   },
   en: {
     windowTitle: "My Computer - Loan Portfolio Manager.exe",
@@ -163,11 +249,12 @@ const I18N_DICTS = {
     schemeVista: "Windows Vista",
     btnApply: "Apply",
     btnCancel: "Cancel",
-    menuLang: "中文 / English",
-    menuGitHub: "Visit GitHub Repo",
-    menuAbout: "About Multi-Loan 98...",
+    menuLang: "Regional Settings(L)...",
+    langTitle: "Regional Settings",
+    tabRegional: "Regional Settings(R)",
+    lblLangSelect: "Select the language and regional format for the system:",
     aboutTitle: "About Loan Portfolio Manager",
-    aboutVersion: "Version: v2.0.0",
+    aboutVersion: "Version: v2.1.0",
     aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, dark mode and i18n support.",
     aboutCopy: "Copyright (C) 1998 - 2026.",
     btnOK: "OK",
@@ -190,8 +277,93 @@ const I18N_DICTS = {
     planPlaceholder: "Please enter complete and valid numeric values to generate the repayment plan.",
     closeMsg: "Windows 98 suggests not closing the main window! You can click minimize to place it in the taskbar.",
     prepayLabel: " (Incl. Prepayment ¥{amount})"
+  },
+  ja: {
+    windowTitle: "マイ コンピュータ - ローン ポートフォリオ マネージャー.exe",
+    labelTotalPrincipal: "ローン総額",
+    labelTotalInterest: "利息総額",
+    labelTotalSum: "元利合計",
+    labelFirstMonth: "初回返済額",
+    labelPeakMonth: "ピーク月支払い月",
+    chartTitle: "システム モニタ - 月別返済トレンド",
+    mergedTableTitle: "マージされた月次返済計画表",
+    btnExportCSV: "CSV エクスポート",
+    thDate: "返済年月",
+    thPayment: "月返済額(円)",
+    thPrincipal: "元金総額(円)",
+    thInterest: "利息総額(円)",
+    thRemaining: "残り元金(円)",
+    thActive: "アクティブなローン",
+    tabParams: "基本パラメーター(P)",
+    tabPlan: "返済計画表(L)",
+    groupLoanConfig: "ローンの基本属性設定",
+    lblName: "ローン名：",
+    lblAmount: "ローン金額：",
+    unitYuan: "円",
+    lblRate: "年利：",
+    lblMethod: "返済方式：",
+    methodACPI: "元利均等返済",
+    methodACP: "元金均等返済",
+    lblTerm: "返済期間：",
+    unitMonth: "ヶ月",
+    lblStart: "初回返済：",
+    lblYear: "年",
+    lblMonthUnit: "月",
+    groupPrepay: "繰上返済シミュレータ (任意)",
+    lblPrepayPeriod: "返済回数：",
+    lblPeriodUnit: "回目後",
+    lblPrepayAmount: "繰上返済額：",
+    groupQuickView: "このローンの返済概要",
+    lblDetailTotal: "このローンの元利合計",
+    lblDetailInterest: "このローンの利息合計",
+    lblDetailFirst: "初回返済額",
+    btnDelete: "ローン.lnkの破棄",
+    thPeriod: "期数",
+    thMonthPay: "当月返済額(円)",
+    thMonthPrincipal: "充当元金(円)",
+    thMonthInterest: "支払利息(円)",
+    btnStart: "スタート(S)",
+    menuNewLoan: "ローンの新規作成(.lnk)",
+    menuClearAll: "全データの消去(.sys)",
+    menuTheme: "画面のプロパティ(D)...",
+    displayTitle: "画面のプロパティ",
+    tabAppearance: "デザイン(A)",
+    lblScheme: "配色(S)：",
+    schemeStandard: "Windows クラシック",
+    schemeDark: "クラシック ダーク",
+    schemeVista: "Windows Vista",
+    btnApply: "適用(A)",
+    btnCancel: "キャンセル",
+    menuLang: "地域と言語のオプション(L)...",
+    langTitle: "地域と言語のオプション",
+    tabRegional: "地域設定(R)",
+    lblLangSelect: "システムで使用する言語と地域の形式を選択してください：",
+    aboutTitle: "ローン ポートフォリオ マネージャーについて",
+    aboutVersion: "バージョン：v2.1.0",
+    aboutDesc: "マルチローン合併分析ツール。リアルタイム自動再計算、繰上返済シミュレーション、CSVエクスポート、画面デザインとマルチ言語の切り替えに対応しています。",
+    aboutCopy: "Copyright (C) 1998 - 2026.",
+    btnOK: "OK",
+    btn5Yr: "5年",
+    btn10Yr: "10年",
+    btn20Yr: "20年",
+    btn30Yr: "30年",
+    nameMortgage: "住宅ローン",
+    nameAuto: "マイカーローン",
+    nameCard: "カードローン",
+    nameConsumer: "フリーローン",
+    
+    // JS 端特有提示信息
+    alertLimit: "⚠️ システム警告 (MAX_LIMIT_REACHED):\n\n現在ロードされている設定ファイルが上限 (20/20) に達しました。\n\nシステムの安定動作のため、不要な設定ファイル (.cfg) を破棄してから新規作成してください。",
+    confirmDelete: "設定ファイル \"{name}.cfg\" を永久に破棄し、削除してもよろしいですか？この操作は取り消せません。",
+    confirmClear: "⚠️ 警告: システム内のすべてのローン設定ファイルを消去しようとしています。ローカルキャッシュ (LocalStorage) もクリアされます。\n\n続行しますか？",
+    loanDefaultName: "ローン",
+    unnamedLoan: "名称未設定ローン",
+    emptyStateText: "有効な設定ファイルが見つかりません。左側のツリーで「ローンの新規作成...」をクリックして、最初のローン設定を作成してください。",
+    planPlaceholder: "返済計画表を生成するには、有効な数値を入力してください。",
+    closeMsg: "ウィンドウを閉じないことをお勧めします。最小化してタスクバーに収納することができます。",
+    prepayLabel: " (繰上返済額 {amount} 円を含む)"
   }
-};
+};;
 
 // 默认的初始数据（为保持通用性，示例命名为“贷款 1”）
 const DEFAULT_LOANS = [
@@ -238,14 +410,32 @@ function applyTranslations() {
   const windowTitle = document.getElementById('windowTitle');
   const taskbarTitle = document.getElementById('taskbarTitle');
   
+  let summaryTitle = 'Loan Portfolio.cfg';
+  let propText = 'Properties';
+  let propTask = 'Props';
+  
+  if (currentLang === 'zh') {
+    summaryTitle = '贷款组合管理器.cfg';
+    propText = '属性';
+    propTask = '属性';
+  } else if (currentLang === 'zh-HK') {
+    summaryTitle = '貸款組合管理器.cfg';
+    propText = '屬性';
+    propTask = '屬性';
+  } else if (currentLang === 'ja') {
+    summaryTitle = 'ローンポートフォリオ.cfg';
+    propText = 'プロパティ';
+    propTask = '詳細';
+  }
+  
   if (currentSelectedId === 'summary') {
     if (windowTitle) windowTitle.innerText = t('windowTitle');
-    if (taskbarTitle) taskbarTitle.innerText = '📁 ' + (currentLang === 'zh' ? '贷款组合管理器.cfg' : 'Loan Portfolio.cfg');
+    if (taskbarTitle) taskbarTitle.innerText = '📁 ' + summaryTitle;
   } else {
     const curLoan = loans.find(l => l.id === currentSelectedId);
     if (curLoan) {
-      if (windowTitle) windowTitle.innerText = `${currentLang === 'zh' ? '属性' : 'Properties'} - ${curLoan.name}.cfg`;
-      if (taskbarTitle) taskbarTitle.innerText = `📄 ${currentLang === 'zh' ? '属性' : 'Props'}: ${curLoan.name}.cfg`;
+      if (windowTitle) windowTitle.innerText = `${propText} - ${curLoan.name}.cfg`;
+      if (taskbarTitle) taskbarTitle.innerText = `📄 ${propTask}: ${curLoan.name}.cfg`;
     }
   }
 
@@ -259,14 +449,31 @@ function applyTranslations() {
 
 /**
  * 财务数字千分位格式化：保留 2 位小数并加上千分位逗号
- * 确保中文状态下为 zh-CN，英文状态下为 en-US，提高全局易读性
+ * 自适应多国语言区域设置，提高全局金融易读性
  */
 function formatNumber(num) {
   if (num === null || num === undefined || isNaN(num)) return '0.00';
-  return Number(num).toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US', {
+  let locale = 'en-US';
+  if (currentLang === 'zh') locale = 'zh-CN';
+  else if (currentLang === 'zh-HK') locale = 'zh-HK';
+  else if (currentLang === 'ja') locale = 'ja-JP';
+  return Number(num).toLocaleString(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+/**
+ * 依据系统当前的语言设置，获取贴切地道的货币单位（元/円/¥）
+ * 用于全局统一大盘面板、图表 Tooltip 和坐标轴的金融币种后缀展示
+ */
+function getCurrencyUnit() {
+  if (currentLang === 'zh' || currentLang === 'zh-HK') {
+    return '元';
+  } else if (currentLang === 'ja') {
+    return '円';
+  }
+  return '¥';
 }
 
 // ==========================================
@@ -532,10 +739,10 @@ function calculateAll() {
   document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ${unitText}`;
   
   if (monthlyAggregated.length > 0) {
-    document.getElementById('sumFirstMonth').innerText = `${formatNumber(monthlyAggregated[0].payment)} ${currentLang === 'zh' ? '元' : '¥'}`;
-    document.getElementById('sumPeakMonth').innerText = `${peakMonth} (${formatNumber(peakPayment)}${currentLang === 'zh' ? '元' : '¥'})`;
+    document.getElementById('sumFirstMonth').innerText = `${formatNumber(monthlyAggregated[0].payment)} ${getCurrencyUnit()}`;
+    document.getElementById('sumPeakMonth').innerText = `${peakMonth} (${formatNumber(peakPayment)}${getCurrencyUnit()})`;
   } else {
-    document.getElementById('sumFirstMonth').innerText = `0.00 ${currentLang === 'zh' ? '元' : '¥'}`;
+    document.getElementById('sumFirstMonth').innerText = `0.00 ${getCurrencyUnit()}`;
     document.getElementById('sumPeakMonth').innerText = '-';
   }
 
@@ -749,7 +956,7 @@ function renderEmptyState() {
   document.getElementById('sumPrincipal').innerText = `0.00 ${unitText}`;
   document.getElementById('sumInterest').innerText = `0.00 ${unitText}`;
   document.getElementById('sumTotal').innerText = `0.00 ${unitText}`;
-  document.getElementById('sumFirstMonth').innerText = `0.00 ${currentLang === 'zh' ? '元' : '¥'}`;
+  document.getElementById('sumFirstMonth').innerText = `0.00 ${getCurrencyUnit()}`;
   document.getElementById('sumPeakMonth').innerText = '-';
   
   const tbody = document.getElementById('tableSummaryBody');
@@ -903,7 +1110,7 @@ function updateSingleLoanUI(loan) {
 
   // 计算本笔贷款的简易统计
   const schedule = calculateSingleLoan(loan);
-  const yuan = currentLang === 'zh' ? ' 元' : ' ¥';
+  const yuan = ' ' + getCurrencyUnit();
   
   if (schedule.length > 0) {
     const sumTotal = schedule.reduce((sum, r) => sum + r.payment, 0);
@@ -1013,7 +1220,7 @@ function handleParamChange() {
 
   // 2. 局部刷新单笔属性指标
   const schedule = calculateSingleLoan(loan);
-  const yuan = currentLang === 'zh' ? ' 元' : ' ¥';
+  const yuan = ' ' + getCurrencyUnit();
   
   if (schedule.length > 0) {
     const sumTotal = schedule.reduce((sum, r) => sum + r.payment, 0);
@@ -1436,19 +1643,45 @@ function applyThemeSelection() {
   calculateAll();
 }
 
-// 切换中英文语言（i18n 国际化）
-function toggleLanguage() {
-  currentLang = currentLang === 'zh' ? 'en' : 'zh';
-  localStorage.setItem('WIN98_LANG', currentLang);
+// 控制“区域和语言设置”弹窗显示或隐藏
+function showLangProperties(show) {
+  const overlay = document.getElementById('langPropertiesOverlay');
+  if (!overlay) return;
+  // 切换弹窗的显示与隐藏状态
+  overlay.style.display = show ? 'flex' : 'none';
   
-  // 1. 应用新语言翻译
+  if (show) {
+    // 弹窗打开时，初始化下拉框选中的当前全局语言偏好
+    const selectEl = document.getElementById('langSelect');
+    if (selectEl) {
+      selectEl.value = currentLang;
+    }
+  }
+}
+
+// 区域和语言确定按钮回调：保存偏好，执行多语言热重载，并关闭窗口
+function confirmLangSelection() {
+  const selectEl = document.getElementById('langSelect');
+  if (!selectEl) return;
+  const targetLang = selectEl.value;
+  
+  // 1. 设置当前的语言状态变量
+  currentLang = targetLang;
+  
+  // 2. 将新的语言偏好写入浏览器 LocalStorage 缓存
+  localStorage.setItem('WIN98_LANG', targetLang);
+  
+  // 3. 应用全新的语言包翻译
   applyTranslations();
   
-  // 2. 重新渲染左侧树形目录（后缀名中英互译）
+  // 4. 重新渲染左侧文件资源目录树（同步后缀名翻译）
   renderTreeView();
   
-  // 3. 全局重算，重绘图表（同步图例和轴的语言）
+  // 5. 触发零延迟全盘重算与图表重绘（同步图例和轴的多语言文字）
   calculateAll();
+  
+  // 6. 关闭设置对话框
+  showLangProperties(false);
 }
 
 /**
@@ -1472,7 +1705,7 @@ document.addEventListener('focusout', function(e) {
 function initApp() {
   // 加载语言偏好
   const savedLang = localStorage.getItem('WIN98_LANG');
-  if (savedLang === 'zh' || savedLang === 'en') {
+  if (savedLang === 'zh' || savedLang === 'zh-HK' || savedLang === 'en' || savedLang === 'ja') {
     currentLang = savedLang;
   } else {
     // 默认读取浏览器语言自适应
