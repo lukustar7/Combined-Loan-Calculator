@@ -1436,10 +1436,13 @@ body.theme-vista .win-start-menu-sidebar::after {
   font-size: 11px;
   font-weight: bold;
   color: rgba(255, 255, 255, 0.65);
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  white-space: nowrap;
+  position: absolute;
+  bottom: 52px; /* 居中放置在 Vista 侧栏的垂直高度 */
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg); /* 逆时针旋转90度，让文字从底向上、字头朝左正确显示 */
+  transform-origin: center;
   text-shadow: 0 0 8px rgba(255,255,255,0.3);
-  margin-bottom: 10px;
   font-family: "Segoe UI", Arial, sans-serif;
   letter-spacing: 0.5px;
 }
