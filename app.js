@@ -58,6 +58,9 @@ const I18N_DICTS = {
     lblPrepayPeriod: "在第几期：",
     lblPeriodUnit: "期后",
     lblPrepayAmount: "还款金额：",
+    lblPrepayMethod: "处理方式：",
+    prepayShrink: "缩短期限",
+    prepayReduce: "减少月供",
     groupQuickView: "本笔贷款计算速览",
     lblDetailTotal: "本笔本息合计",
     lblDetailInterest: "本笔应付利息",
@@ -145,6 +148,9 @@ const I18N_DICTS = {
     lblPrepayPeriod: "在第幾期：",
     lblPeriodUnit: "期後",
     lblPrepayAmount: "還款金額：",
+    lblPrepayMethod: "處理方式：",
+    prepayShrink: "縮短期限",
+    prepayReduce: "減少月供",
     groupQuickView: "本筆貸款計算速覽",
     lblDetailTotal: "本筆本息合計",
     lblDetailInterest: "本筆應付利息",
@@ -232,6 +238,9 @@ const I18N_DICTS = {
     lblPrepayPeriod: "At Period: ",
     lblPeriodUnit: "th payment",
     lblPrepayAmount: "Prepay Amount: ",
+    lblPrepayMethod: "Handling: ",
+    prepayShrink: "Reduce Term",
+    prepayReduce: "Reduce Payment",
     groupQuickView: "Quick View (This Loan)",
     lblDetailTotal: "Total P+I Due",
     lblDetailInterest: "Total Interest Due",
@@ -319,6 +328,9 @@ const I18N_DICTS = {
     lblPrepayPeriod: "返済回数：",
     lblPeriodUnit: "回目後",
     lblPrepayAmount: "繰上返済額：",
+    lblPrepayMethod: "返済方式：",
+    prepayShrink: "期間短縮",
+    prepayReduce: "返済額軽減",
     groupQuickView: "このローンの返済概要",
     lblDetailTotal: "このローンの元利合計",
     lblDetailInterest: "このローンの利息合計",
@@ -385,7 +397,8 @@ const DEFAULT_LOANS = [
     startYear: 2026,   // 首次还款年份
     startMonth: 6,     // 首次还款月份
     prepayPeriod: '',  // 提前还款期数
-    prepayAmount: ''   // 提前还款金额，以“元”为单位
+    prepayAmount: '',  // 提前还款金额，以“元”为单位
+    prepayMethod: 'shrink' // 提前还款处理方式：shrink(缩短期限) 或 reduce(减少月供)
   }
 ];
 
@@ -520,6 +533,7 @@ function calculateSingleLoan(loan) {
   // 提取提前还款模拟的参数配置
   const prepayPeriod = parseInt(loan.prepayPeriod) || 0;
   const prepayAmount = parseFloat(loan.prepayAmount) || 0; // 提前还款本即为“元”，无需折算
+  const prepayMethod = loan.prepayMethod || 'shrink'; // 提前还款处理方式，默认缩期
 
   const details = [];
   let remainingPrincipal = amount; // 剩余本金
@@ -564,6 +578,19 @@ function calculateSingleLoan(loan) {
 
       remainingPrincipal -= principal;
 
+      // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的月供金额
+      if (i === prepayPeriod && extraPrepay > 0 && prepayMethod === 'reduce') {
+        const nRemain = term - i;
+        if (nRemain > 0 && remainingPrincipal > 0) {
+          if (monthlyRate === 0) {
+            monthlyRepayment = remainingPrincipal / nRemain;
+          } else {
+            // 重新应用等额本息公式：A = P * [R * (1 + R)^N] / [(1 + R)^N - 1]
+            monthlyRepayment = remainingPrincipal * (monthlyRate * Math.pow(1 + monthlyRate, nRemain)) / (Math.pow(1 + monthlyRate, nRemain) - 1);
+          }
+        }
+      }
+
       // 计算该期的自然年月 (O(1) 数学直算法)
       const dateInfo = getMonthYearOffset(loan.startYear, loan.startMonth, i - 1);
 
@@ -586,7 +613,7 @@ function calculateSingleLoan(loan) {
   } 
   // 2. 等额本金计算法
   else if (loan.method === 'ACP') {
-    const constantPrincipal = amount / term; // 每月应还本金固定不变
+    let constantPrincipal = amount / term; // 每月应还本金固定不变（变更为 let 以便重算）
 
     for (let i = 1; i <= term; i++) {
       if (remainingPrincipal <= 0.01) break;
@@ -613,6 +640,14 @@ function calculateSingleLoan(loan) {
       }
 
       remainingPrincipal -= principal;
+
+      // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的本金偿还额
+      if (i === prepayPeriod && extraPrepay > 0 && prepayMethod === 'reduce') {
+        const nRemain = term - i;
+        if (nRemain > 0 && remainingPrincipal > 0) {
+          constantPrincipal = remainingPrincipal / nRemain;
+        }
+      }
 
       const dateInfo = getMonthYearOffset(loan.startYear, loan.startMonth, i - 1);
 
@@ -1110,6 +1145,12 @@ function updateSingleLoanUI(loan) {
   document.getElementById('prepayPeriod').value = loan.prepayPeriod || '';
   document.getElementById('prepayAmount').value = loan.prepayAmount || '';
   
+  // 设置提前还款方式单选框
+  const prepayRadios = document.getElementsByName('prepayMethod');
+  prepayRadios.forEach(radio => {
+    radio.checked = radio.value === (loan.prepayMethod || 'shrink');
+  });
+
   // 设置还款方式单选框
   const radios = document.getElementsByName('repayMethod');
   radios.forEach(radio => {
@@ -1211,6 +1252,14 @@ function handleParamChange() {
 
   const prepayAmountVal = parseFloat(document.getElementById('prepayAmount').value);
   loan.prepayAmount = !isNaN(prepayAmountVal) && prepayAmountVal > 0 ? prepayAmountVal : '';
+
+  const prepayRadios = document.getElementsByName('prepayMethod');
+  for (let r of prepayRadios) {
+    if (r.checked) {
+      loan.prepayMethod = r.value;
+      break;
+    }
+  }
 
   const radios = document.getElementsByName('repayMethod');
   for (let r of radios) {
@@ -1333,7 +1382,8 @@ function createNewLoan() {
     startYear: new Date().getFullYear(),
     startMonth: new Date().getMonth() + 1,
     prepayPeriod: '',
-    prepayAmount: ''
+    prepayAmount: '',
+    prepayMethod: 'shrink' // 默认处理方式为缩短期限
   };
 
   loans.push(newLoan);
@@ -1751,6 +1801,7 @@ function initApp() {
   loans.forEach(loan => {
     if (loan.prepayPeriod === undefined) loan.prepayPeriod = '';
     if (loan.prepayAmount === undefined) loan.prepayAmount = '';
+    if (loan.prepayMethod === undefined) loan.prepayMethod = 'shrink';
   });
 
   // 1. 全局应用语言包

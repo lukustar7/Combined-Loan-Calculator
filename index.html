@@ -187,6 +187,19 @@
                         <input type="number" id="prepayAmount" class="win-input" min="0" step="any" oninput="handleParamChange()">
                         <span class="unit" data-i18n="unitYuan">元</span>
                       </div>
+                      <div class="win-field-row">
+                        <label data-i18n="lblPrepayMethod">处理方式：</label>
+                        <div style="flex: 1; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                          <label class="win-radio-container" style="width: auto;">
+                            <input type="radio" name="prepayMethod" value="shrink" class="win-radio" checked onchange="handleParamChange()">
+                            <span data-i18n="prepayShrink">缩短期限</span>
+                          </label>
+                          <label class="win-radio-container" style="width: auto;">
+                            <input type="radio" name="prepayMethod" value="reduce" class="win-radio" onchange="handleParamChange()">
+                            <span data-i18n="prepayReduce">减少月供</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
