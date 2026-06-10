@@ -14,6 +14,7 @@
 // 1. 全局状态与多语言词典定义
 // ==========================================
 
+const APP_VERSION = "2.1.1"; // 系统统一版本号，作为版本信息的单一可信数据源
 let loans = []; // 存储所有贷款的数组
 let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代表全局汇总，数字字符串代表单笔贷款 ID)
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
@@ -89,7 +90,7 @@ const I18N_DICTS = {
     menuGitHub: "访问 GitHub 仓库",
     menuAbout: "关于本软件...",
     aboutTitle: "关于贷款组合管理器",
-    aboutVersion: "版本号：v2.1.0",
+    aboutVersion: "版本号：v{version}",
     aboutDesc: "通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、显示属性与多语言切换。",
     aboutCopy: "著作权所有 (C) 1998 - 2026.",
     btnOK: "确定",
@@ -179,7 +180,7 @@ const I18N_DICTS = {
     menuGitHub: "訪問 GitHub 倉庫",
     menuAbout: "關於本軟件...",
     aboutTitle: "關於貸款組合管理器",
-    aboutVersion: "版本號：v2.1.0",
+    aboutVersion: "版本號：v{version}",
     aboutDesc: "通用多筆債務合並分析工具。零按鈕實時重算，支持提前還款模擬、CSV 導出、顯示屬性與多語言切換。",
     aboutCopy: "著作權所有 (C) 1998 - 2026.",
     btnOK: "確定",
@@ -269,8 +270,8 @@ const I18N_DICTS = {
     menuGitHub: "Visit GitHub Repo",
     menuAbout: "About Multi-Loan 98...",
     aboutTitle: "About Loan Portfolio Manager",
-    aboutVersion: "Version: v2.1.0",
-    aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, dark mode and i18n support.",
+    aboutVersion: "Version: v{version}",
+    aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, dark mode and i18n support。",
     aboutCopy: "Copyright (C) 1998 - 2026.",
     btnOK: "OK",
     btn5Yr: "5 Yrs",
@@ -359,7 +360,7 @@ const I18N_DICTS = {
     menuGitHub: "GitHub リポジトリにアクセス",
     menuAbout: "このソフトウェアについて...",
     aboutTitle: "ローン ポートフォリオ マネージャーについて",
-    aboutVersion: "バージョン：v2.1.0",
+    aboutVersion: "バージョン：v{version}",
     aboutDesc: "マルチローン合併分析ツール。リアルタイム自動再計算、繰上返済シミュレーション、CSVエクスポート、画面デザインとマルチ言語の切り替えに対応しています。",
     aboutCopy: "Copyright (C) 1998 - 2026.",
     btnOK: "OK",
@@ -407,6 +408,23 @@ const DEFAULT_LOANS = [
 // ==========================================
 
 /**
+ * HTML 实体字符安全转义，用于防范 DOM-XSS 注入攻击
+ */
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[&<>"']/g, function(match) {
+    switch (match) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#39;';
+      default: return match;
+    }
+  });
+}
+
+/**
  * 翻译文本提取函数，支持占位符动态替换
  */
 function t(key, variables = {}) {
@@ -424,7 +442,12 @@ function applyTranslations() {
   // 1. 扫描所有带有 data-i18n 的普通元素
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    el.innerText = t(key);
+    // 如果是关于对话框中的版本号，需动态注入全局版本号
+    if (key === 'aboutVersion') {
+      el.innerText = t(key, { version: APP_VERSION });
+    } else {
+      el.innerText = t(key);
+    }
   });
   
   // 2. 动态更新主窗口标题与任务栏按钮文字
@@ -526,9 +549,9 @@ function getMonthYearOffset(startYear, startMonth, offsetMonths) {
  */
 function calculateSingleLoan(loan) {
   const amount = parseFloat(loan.amount) || 0; // 金额单位本即为“元”，无需再乘以一万
-  const annualRate = (parseFloat(loan.rate) || 0) / 100; // 年利率小数形式
+  const annualRate = Math.max(0, parseFloat(loan.rate) || 0) / 100; // 强制年化利率不能为负数，彻底解决分母为 0 导致 Infinity 的漏洞
   const monthlyRate = annualRate / 12; // 月利率
-  const term = parseInt(loan.term) || 0; // 还款月数
+  const term = Math.min(3600, parseInt(loan.term) || 0); // 限制期限上限最高300年(3600期)，防止海量循环卡死主线程
   
   // 提取提前还款模拟的参数配置
   const prepayPeriod = parseInt(loan.prepayPeriod) || 0;
@@ -828,7 +851,7 @@ function renderSummaryTable(data) {
       <td>${formatNumber(row.principal)}</td>
       <td>${formatNumber(row.interest)}</td>
       <td style="color:#808080;">${formatNumber(row.remaining)}</td>
-      <td style="font-size:10px;">${row.activeLoans}</td>
+      <td style="font-size:10px;">${escapeHTML(row.activeLoans)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1176,7 +1199,7 @@ function renderTreeView() {
     loanNode.className = `win-tree-item ${currentSelectedId === loan.id ? 'selected' : ''}`;
     loanNode.innerHTML = `
       <span class="win-tree-item-icon">📄</span>
-      <span>${loan.name}.cfg</span>
+      <span>${escapeHTML(loan.name)}.cfg</span>
     `;
     loanNode.onclick = () => selectTreeNode(loan.id);
     container.appendChild(loanNode);

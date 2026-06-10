@@ -1,67 +1,63 @@
-# Windows 贷款组合管理器 (Combined Loan Calculator)
+# 📁 Windows 贷款组合管理器 (Multi-Loan 98)
 
-这是一个运行于 Web 浏览器的纯静态多笔贷款合并计算工具。其视觉设计采用 Windows 98 经典用户界面样式，底层通过原生 JavaScript 实现多笔贷款在自然月时间线上的聚合合并计算与可视化呈现。
+[最新版本: v2.1.1](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
 
-项目适用于静态托管，可无缝部署于 GitHub Pages。
-
----
-
-## 主要功能
-
-1. **实时计算**：监听表单输入事件，数据变更时自动触发后台重算，无需手动点击计算按钮。
-2. **多笔贷款对齐合并**：支持动态添加多笔贷款（最大支持 20 笔），根据每笔贷款的首次还款年月与期限，将其投射到统一的自然月时间线上，累加求和每个自然月的还款金额。
-3. **趋势图表呈现**：通过 Chart.js 渲染堆叠柱状图，展示未来月供的组成结构与变化趋势。
-4. **数据本地持久化**：使用浏览器 LocalStorage 存储贷款配置及主题/语言偏好，页面刷新或关闭后数据自动恢复。
-5. **提前还款模拟 (Prepayment)**：支持在特定还款期数后进行一次性提前还款模拟。提供“缩短期限（月供不变）”与“减少月供（期限不变）”两种处理方式，前者自动缩短还款周期并精确计算省下的利息，后者自动重新计算未来的每月月供金额，维持原定到期日不变。
-6. **金融数字千分位格式化**：全站所有金额显示自动进行千分位格式化显示（如 `1,391,903.32`），显著提升可读性。
-7. **一键 CSV 数据导出**：支持将合并计划总表或任意单笔还款明细一键导出为标准的 .csv 文件，特别注入 UTF-8 BOM 字节序标记，彻底杜绝 Excel 中文乱码。
-8. **经典黑客深色皮肤 (Retro Dark)**：在开始菜单中一键开启黑客深色模式，还原炫酷的 Windows 98 深灰/暗蓝绿色桌面，并联动 Chart.js 的坐标轴、网格与悬浮 Tooltip 自动适应暗色皮肤重绘。
-9. **全站多语言热切换 (i18n)**：支持简体中文与 English 的一键热切换，全方位联动翻译 DOM 标签、资源目录树后缀及 Chart.js 轴与图例。
-10. **Safari 渲染优化**：在 macOS 环境下使用次像素抗锯齿与宋体优先级声明，确保中文字体笔画清晰。
-
+> 运行于浏览器的纯静态、怀旧风多笔贷款合并计算器。支持 Windows 98 经典与 Windows Vista Aero 双重皮肤。
 
 ---
 
-## 文件结构
+## 🚀 快速开始
 
-项目由以下三个核心文件组成：
-* `index.html` - 页面结构与主视窗 DOM 骨架。
-* `styles.css` - Windows 98 样式表，包含 3D 双层边框及响应式自适应布局。
-* `app.js` - 计算逻辑、时间线合并合并算法及图表初始化。
+本项目为纯静态单页面应用，无任何第三方运行环境依赖。
 
----
+```bash
+# 1. 克隆项目
+git clone https://github.com/lukustar7/Combined-Loan-Calculator.git
 
-## 运行与部署
-
-### 1. 本地运行
-本应用为纯静态单页面应用，无任何第三方运行环境依赖。
-* 双击 [index.html](file:///Users/luku/Combined-Loan-Calculator/index.html) 文件即可直接在浏览器中运行。
-* **推荐方案**：为避免本地 `file://` 协议的沙箱限制，可在项目根目录下运行简易 HTTP 服务器：
-  ```bash
-  python3 -m http.server 8000
-  ```
-  然后在浏览器中访问 `http://localhost:8000`。
-
-### 2. GitHub Pages 静态部署
-1. 在 GitHub 上新建公开仓库 `Combined-Loan-Calculator`。
-2. 将本地分支推送到远程仓库：
-   ```bash
-   git remote add origin https://github.com/您的用户名/Combined-Loan-Calculator.git
-   git branch -M main
-   git push -u origin main
-   ```
-3. 进入该仓库的 **Settings** -> **Pages**。
-4. 在 **Build and deployment** 的 Branch 处选择 `main` 分支和 `/ (root)`，点击 Save 保存。
-5. 稍后即可通过以下链接访问在线版本：
-   `https://您的用户名.github.io/Combined-Loan-Calculator/`
+# 2. 根目录下启动简易服务（推荐）
+python3 -m http.server 8000
+```
+然后在浏览器中访问 `http://localhost:8000` 即可直接运行。
 
 ---
 
-## 核心计算公式
+## ✨ 核心亮点
 
-* **等额本息 (ACPI)**：
-  $$A = P \times \frac{R \times (1 + R)^N}{(1 + R)^N - 1}$$
-* **等额本金 (ACP)**：
-  $$P_m = \frac{P}{N}, \quad I_m = (P - (m - 1) \times P_m) \times R$$
+1. **零延迟实时重算**：全站输入框监听，数据变更毫秒级自动重算与趋势图表重绘制。
+2. **时间轴对齐合流**：支持最大装载 20 笔贷款配置，自适应对齐首次还款年月并合并生成总账表。
+3. **提前还款双模型**：等额本息/本金均支持“缩短期限”与“减少月供”模拟，最后一期平账逻辑彻底消除负利息误差。
+4. **双重怀旧皮肤**：一键切换 Windows 98 经典浮雕与 Windows Vista Aero 半透明毛玻璃外观，Chart.js 配色智能联动。
+5. **地道多语言热切**：简体中文、繁体中文、英文、日文四语一键秒切，CSV 导出特制 UTF-8 BOM 杜绝 Excel 乱码。
 
-*(其中：$P$ 为贷款本金，$R$ 为月利率，$N$ 为还款总月数，$m$ 为当前期数)*
+---
+
+## 🛠️ 开发者速查（二次开发）
+
+### 1. 项目文件结构
+* [index.html](file:///Users/luku/Combined-Loan-Calculator/index.html) - DOM 结构、“显示属性”与“区域语言设置”控制面板。
+* [styles.css](file:///Users/luku/Combined-Loan-Calculator/styles.css) - 复古系统皮肤 CSS 变量定义、Aero 高光渐变及响应式自适应布局。
+* [app.js](file:///Users/luku/Combined-Loan-Calculator/app.js) - 计算引擎、多语言词包（`I18N_DICTS`）、合并映射机制与 Chart.js 皮肤联动逻辑。
+
+### 2. 怎么加一门新语言？
+在 `app.js` 的 `I18N_DICTS` 中新增语言包，并在 `index.html` 的语言选择器中注册选项即可。HTML 元素声明 `data-i18n="Key"` 即可实现自动绑定翻译：
+```javascript
+// app.js 中的 I18N_DICTS 示例
+de: {
+  windowTitle: "Mein Computer - Darlehens-Manager.exe",
+  aboutVersion: "Version: v{version}",
+}
+```
+
+### 3. 怎么写一套新皮肤？
+在 `styles.css` 中根据 body 类名（如 `.theme-xp`）重写全局 CSS 变量（如 `--win-bg`），然后在 `index.html` 的显示属性下拉框中注册该选项。最后在 `app.js` 的 `updateChartTheme()` 中联动配置 Chart.js 配色。
+
+### 4. 底层架构特点
+* **单一版本源**：版本号在 `app.js` 头部以 `APP_VERSION` 全量定义，多语言自动动态填充变量。
+* **数据持久化**：用户沙盘配置自动同步至 `localStorage`，防空值拦截设计确保开箱即用。
+* **性能优化**：合并计算时采用内存一次性映射机制，年月偏移使用 $O(1)$ 纯数学直算，无 while 循环，杜绝卡死。
+
+---
+
+## 📄 开源协议
+
+本项目基于 [MIT](https://opensource.org/licenses/MIT) 协议开源。详细变更历史请参阅 [CHANGELOG.md](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md)。
