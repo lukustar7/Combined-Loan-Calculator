@@ -177,28 +177,11 @@
                   <div class="win-group-box" style="margin-top: 15px;">
                     <span class="win-group-box-title" data-i18n="groupPrepay">提前还款模拟 (可选)</span>
                     <div style="max-width: 520px; margin: 8px 0; display: flex; flex-direction: column; gap: 10px;">
-                      <div class="win-field-row">
-                        <label data-i18n="lblPrepayPeriod">在第几期：</label>
-                        <input type="number" id="prepayPeriod" class="win-input" min="1" step="1" oninput="handleParamChange()" style="flex: 0.4;">
-                        <span class="unit" data-i18n="lblPeriodUnit">期后</span>
-                      </div>
-                      <div class="win-field-row">
-                        <label data-i18n="lblPrepayAmount">还款金额：</label>
-                        <input type="number" id="prepayAmount" class="win-input" min="0" step="any" oninput="handleParamChange()">
-                        <span class="unit" data-i18n="unitYuan">元</span>
-                      </div>
-                      <div class="win-field-row">
-                        <label data-i18n="lblPrepayMethod">处理方式：</label>
-                        <div style="flex: 1; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                          <label class="win-radio-container" style="width: auto;">
-                            <input type="radio" name="prepayMethod" value="shrink" class="win-radio" checked onchange="handleParamChange()">
-                            <span data-i18n="prepayShrink">缩短期限</span>
-                          </label>
-                          <label class="win-radio-container" style="width: auto;">
-                            <input type="radio" name="prepayMethod" value="reduce" class="win-radio" onchange="handleParamChange()">
-                            <span data-i18n="prepayReduce">减少月供</span>
-                          </label>
-                        </div>
+                      <div class="win-field-row" style="align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span id="prepaySummaryText" data-i18n="lblNoPrepay">暂无提前还款配置</span>
+                        <button class="win-btn" onclick="showPrepayManager(true)" style="padding: 4px 10px;">
+                          📅 <span data-i18n="btnManagePrepay">管理提前还款配置(M)...</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -325,7 +308,7 @@
           <div class="win-dialog-icon">💾</div>
           <div class="win-dialog-message">
             <strong>Multi-Loan Manager 98</strong><br>
-            <span data-i18n="aboutVersion">版本号：v2.1.1</span><br><br>
+            <span data-i18n="aboutVersion">版本号：v2.2.0</span><br><br>
             <span data-i18n="aboutDesc">通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、深色主题与多语言切换。</span><br><br>
             <span data-i18n="aboutCopy">著作权所有 (C) 1998 - 2026.</span>
           </div>
@@ -420,6 +403,75 @@
         <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 6px 10px 10px;">
           <button class="win-btn" onclick="confirmLangSelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
           <button class="win-btn" onclick="showLangProperties(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提前还款计划管理属性弹窗 -->
+    <div class="win-dialog-overlay" id="prepayManagerOverlay" style="display: none;" onclick="showPrepayManager(false)">
+      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 420px; max-width: 95%;">
+        <div class="win-titlebar">
+          <div class="win-titlebar-title" data-i18n="prepayManagerTitle">提前还款计划管理器</div>
+          <div class="win-titlebar-controls">
+            <button class="win-titlebar-btn close-btn" onclick="showPrepayManager(false)">✖</button>
+          </div>
+        </div>
+        
+        <div style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+          <!-- 上半区：当前提前还款计划列表 -->
+          <div class="win-group-box" style="display: flex; flex-direction: column; height: 160px;">
+            <span class="win-group-box-title" data-i18n="groupQuickView">已配置列表</span>
+            <div class="win-table-container win-inset" style="flex: 1; overflow-y: auto; background: var(--win-box-bg);">
+              <table class="win-table" style="width: 100%; font-size: 11px;">
+                <thead>
+                  <tr>
+                    <th data-i18n="thPeriod" style="width: 20%;">期数</th>
+                    <th data-i18n="lblPrepayAmount" style="width: 35%;">还款金额</th>
+                    <th data-i18n="lblPrepayMethod" style="width: 30%;">处理方式</th>
+                    <th data-i18n="thPrepayAction" style="width: 15%;">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="prepayManagerTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- 下半区：添加新的一笔 -->
+          <div class="win-group-box">
+            <span class="win-group-box-title" data-i18n="groupLoanConfig">新增提前还款项</span>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 0;">
+              <div class="win-field-row" style="align-items: center;">
+                <label data-i18n="lblPrepayPeriod" style="width: 75px;">在第几期：</label>
+                <input type="number" id="dialogPrepayPeriod" class="win-input" min="1" step="1" style="width: 80px;">
+                <span class="unit" data-i18n="lblPeriodUnit">期后</span>
+              </div>
+              <div class="win-field-row" style="align-items: center;">
+                <label data-i18n="lblPrepayAmount" style="width: 75px;">还款金额：</label>
+                <input type="number" id="dialogPrepayAmount" class="win-input" min="0.01" step="any" style="flex: 1;">
+                <span class="unit" data-i18n="unitYuan">元</span>
+              </div>
+              <div class="win-field-row" style="align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 15px;">
+                  <label class="win-radio-container" style="width: auto;">
+                    <input type="radio" name="dialogPrepayMethod" value="shrink" class="win-radio" checked>
+                    <span data-i18n="prepayShrink">缩短期限</span>
+                  </label>
+                  <label class="win-radio-container" style="width: auto;">
+                    <input type="radio" name="dialogPrepayMethod" value="reduce" class="win-radio">
+                    <span data-i18n="prepayReduce">减少月供</span>
+                  </label>
+                </div>
+                <button class="win-btn" onclick="addTempPrepay()" style="padding: 3px 12px; min-width: 80px;">
+                  ➕ <span data-i18n="btnAddToList">添加到列表(A)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 0 10px 10px;">
+          <button class="win-btn" onclick="confirmPrepaySelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
+          <button class="win-btn" onclick="showPrepayManager(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@
 // 1. 全局状态与多语言词典定义
 // ==========================================
 
-const APP_VERSION = "2.1.1"; // 系统统一版本号，作为版本信息的单一可信数据源
+const APP_VERSION = "2.2.0"; // 系统统一版本号，作为版本信息的单一可信数据源
 let loans = []; // 存储所有贷款的数组
 let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代表全局汇总，数字字符串代表单笔贷款 ID)
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
@@ -112,7 +112,17 @@ const I18N_DICTS = {
     emptyStateText: "未发现活跃的配置文件。请在左侧点击“新增贷款...”创建您的第一笔贷款配置。",
     planPlaceholder: "请输入完整有效的数值，以生成还款计划。",
     closeMsg: "Windows 98 不建议您关闭主窗口！您可以点击最小化将其放入任务栏。",
-    prepayLabel: " (含提前还款 {amount} 元)"
+    prepayLabel: " (含提前还款 {amount} 元)",
+    btnManagePrepay: "管理提前还款配置(M)...",
+    prepayManagerTitle: "提前还款计划管理器",
+    lblPrepaySummary: "已配置 {count} 笔提前还款，累计提前还本 {sum} 元",
+    lblNoPrepay: "暂无提前还款配置",
+    btnAddToList: "添加到列表(A)",
+    thPrepayAction: "操作",
+    linkRemove: "移除",
+    msgInvalidPeriod: "请输入合法的期数！",
+    msgInvalidAmount: "请输入合法的还款金额！",
+    msgDuplicatePeriod: "该期数已配置过提前还款！"
   },
   "zh-HK": {
     windowTitle: "我的電腦 - 貸款組合管理器.exe",
@@ -202,7 +212,17 @@ const I18N_DICTS = {
     emptyStateText: "未發現活躍的配置文件。請在左側點擊“新增貸款...”創建您的第一筆貸款配置。",
     planPlaceholder: "請輸入完整有效的數值，以生成還款計劃。",
     closeMsg: "Windows 不建議您關閉主窗口！您可以點擊最小化將其放入任務欄。",
-    prepayLabel: " (含提前還款 {amount} 元)"
+    prepayLabel: " (含提前還款 {amount} 元)",
+    btnManagePrepay: "管理提前還款配置(M)...",
+    prepayManagerTitle: "提前還款計劃管理器",
+    lblPrepaySummary: "已配置 {count} 筆提前還款，累計提前還本 {sum} 元",
+    lblNoPrepay: "暫無提前還款配置",
+    btnAddToList: "添加到列表(A)",
+    thPrepayAction: "操作",
+    linkRemove: "移除",
+    msgInvalidPeriod: "請輸入合法的期數！",
+    msgInvalidAmount: "請輸入合法的還款金額！",
+    msgDuplicatePeriod: "該期數已配置過提前還款！"
   },
   en: {
     windowTitle: "My Computer - Loan Portfolio Manager.exe",
@@ -292,7 +312,17 @@ const I18N_DICTS = {
     emptyStateText: "No active configuration file found. Please click 'Create New Loan...' on the left tree to create your first loan configuration.",
     planPlaceholder: "Please enter complete and valid numeric values to generate the repayment plan.",
     closeMsg: "Windows 98 suggests not closing the main window! You can click minimize to place it in the taskbar.",
-    prepayLabel: " (Incl. Prepayment ¥{amount})"
+    prepayLabel: " (Incl. Prepayment ¥{amount})",
+    btnManagePrepay: "Manage Prepayments(M)...",
+    prepayManagerTitle: "Prepayment Plan Manager",
+    lblPrepaySummary: "{count} prepayments configured, total prepay ¥{sum}",
+    lblNoPrepay: "No prepayment plan configured",
+    btnAddToList: "Add to List(A)",
+    thPrepayAction: "Action",
+    linkRemove: "Remove",
+    msgInvalidPeriod: "Please enter a valid period!",
+    msgInvalidAmount: "Please enter a valid prepay amount!",
+    msgDuplicatePeriod: "This period has already been configured!"
   },
   ja: {
     windowTitle: "マイ コンピュータ - ローン ポートフォリオ マネージャー.exe",
@@ -382,7 +412,17 @@ const I18N_DICTS = {
     emptyStateText: "有効な設定ファイルが見つかりません。左側のツリーで「ローンの新規作成...」をクリックして、最初のローン設定を作成してください。",
     planPlaceholder: "返済計画表を生成するには、有効な数値を入力してください。",
     closeMsg: "ウィンドウを閉じないことをお勧めします。最小化してタスクバーに収納することができます。",
-    prepayLabel: " (繰上返済額 {amount} 円を含む)"
+    prepayLabel: " (繰上返済額 {amount} 円を含む)",
+    btnManagePrepay: "繰上返済の管理(M)...",
+    prepayManagerTitle: "繰上返済計画マネージャー",
+    lblPrepaySummary: "{count}件の繰上返済が設定されています。累計 ¥{sum}",
+    lblNoPrepay: "繰上返済計画は設定されていません",
+    btnAddToList: "リストに追加(A)",
+    thPrepayAction: "操作",
+    linkRemove: "削除",
+    msgInvalidPeriod: "有効な返済回数を入力してください！",
+    msgInvalidAmount: "有効な返済金額を入力してください！",
+    msgDuplicatePeriod: "この回数はすでに設定されています！"
   }
 };;
 
@@ -397,9 +437,7 @@ const DEFAULT_LOANS = [
     term: 360,         // 期限 (月)
     startYear: 2026,   // 首次还款年份
     startMonth: 6,     // 首次还款月份
-    prepayPeriod: '',  // 提前还款期数
-    prepayAmount: '',  // 提前还款金额，以“元”为单位
-    prepayMethod: 'shrink' // 提前还款处理方式：shrink(缩短期限) 或 reduce(减少月供)
+    prepayments: []    // 提前还款计划列表，格式：[{ period: 12, amount: 50000, method: 'shrink' }]
   }
 ];
 
@@ -553,11 +591,6 @@ function calculateSingleLoan(loan) {
   const monthlyRate = annualRate / 12; // 月利率
   const term = Math.min(3600, parseInt(loan.term) || 0); // 限制期限上限最高300年(3600期)，防止海量循环卡死主线程
   
-  // 提取提前还款模拟的参数配置
-  const prepayPeriod = parseInt(loan.prepayPeriod) || 0;
-  const prepayAmount = parseFloat(loan.prepayAmount) || 0; // 提前还款本即为“元”，无需折算
-  const prepayMethod = loan.prepayMethod || 'shrink'; // 提前还款处理方式，默认缩期
-
   const details = [];
   let remainingPrincipal = amount; // 剩余本金
 
@@ -591,8 +624,10 @@ function calculateSingleLoan(loan) {
       
       let payment = principal + interest;
 
-      // 处理部分提前还款：在第 i 期正常扣款结束后，一次性额外多还一大笔本金
-      if (i === prepayPeriod && prepayAmount > 0 && !isLastPeriod) {
+      // 处理多笔提前还款：在第 i 期正常扣款结束后，一次性额外多还一大笔本金
+      const prepayItem = (loan.prepayments || []).find(p => parseInt(p.period) === i);
+      if (prepayItem && parseFloat(prepayItem.amount) > 0 && !isLastPeriod) {
+        const prepayAmount = parseFloat(prepayItem.amount);
         // 提前还款本金不能超过扣除当月本金后的剩余本金余额
         extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
         principal += extraPrepay;
@@ -602,7 +637,7 @@ function calculateSingleLoan(loan) {
       remainingPrincipal -= principal;
 
       // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的月供金额
-      if (i === prepayPeriod && extraPrepay > 0 && prepayMethod === 'reduce') {
+      if (prepayItem && parseFloat(prepayItem.amount) > 0 && (prepayItem.method || 'shrink') === 'reduce' && !isLastPeriod) {
         const nRemain = term - i;
         if (nRemain > 0 && remainingPrincipal > 0) {
           if (monthlyRate === 0) {
@@ -655,8 +690,10 @@ function calculateSingleLoan(loan) {
 
       let payment = principal + interest;
 
-      // 处理提前还款
-      if (i === prepayPeriod && prepayAmount > 0 && !isLastPeriod) {
+      // 处理多次提前还款
+      const prepayItem = (loan.prepayments || []).find(p => parseInt(p.period) === i);
+      if (prepayItem && parseFloat(prepayItem.amount) > 0 && !isLastPeriod) {
+        const prepayAmount = parseFloat(prepayItem.amount);
         extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
         principal += extraPrepay;
         payment += extraPrepay;
@@ -665,7 +702,7 @@ function calculateSingleLoan(loan) {
       remainingPrincipal -= principal;
 
       // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的本金偿还额
-      if (i === prepayPeriod && extraPrepay > 0 && prepayMethod === 'reduce') {
+      if (prepayItem && parseFloat(prepayItem.amount) > 0 && (prepayItem.method || 'shrink') === 'reduce' && !isLastPeriod) {
         const nRemain = term - i;
         if (nRemain > 0 && remainingPrincipal > 0) {
           constantPrincipal = remainingPrincipal / nRemain;
@@ -1302,15 +1339,20 @@ function updateSingleLoanUI(loan) {
   document.getElementById('loanStartYear').value = loan.startYear || '';
   document.getElementById('loanStartMonth').value = loan.startMonth || '';
   
-  // 部分提前还款模拟的输入框双向赋值 (新增)
-  document.getElementById('prepayPeriod').value = loan.prepayPeriod || '';
-  document.getElementById('prepayAmount').value = loan.prepayAmount || '';
-  
-  // 设置提前还款方式单选框
-  const prepayRadios = document.getElementsByName('prepayMethod');
-  prepayRadios.forEach(radio => {
-    radio.checked = radio.value === (loan.prepayMethod || 'shrink');
-  });
+  // 渲染多次提前还款配置简报 (新增)
+  const summaryTextEl = document.getElementById('prepaySummaryText');
+  if (summaryTextEl) {
+    const prepayments = loan.prepayments || [];
+    if (prepayments.length > 0) {
+      const totalPrepaySum = prepayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+      summaryTextEl.innerText = t('lblPrepaySummary', {
+        count: prepayments.length,
+        sum: formatNumber(totalPrepaySum)
+      });
+    } else {
+      summaryTextEl.innerText = t('lblNoPrepay');
+    }
+  }
 
   // 设置还款方式单选框
   const radios = document.getElementsByName('repayMethod');
@@ -1407,20 +1449,7 @@ function handleParamChange() {
   const monthVal = parseInt(document.getElementById('loanStartMonth').value);
   loan.startMonth = !isNaN(monthVal) && monthVal >= 1 && monthVal <= 12 ? monthVal : 1;
 
-  // 新增提前还款的参数监听
-  const prepayPeriodVal = parseInt(document.getElementById('prepayPeriod').value);
-  loan.prepayPeriod = !isNaN(prepayPeriodVal) && prepayPeriodVal > 0 ? prepayPeriodVal : '';
-
-  const prepayAmountVal = parseFloat(document.getElementById('prepayAmount').value);
-  loan.prepayAmount = !isNaN(prepayAmountVal) && prepayAmountVal > 0 ? prepayAmountVal : '';
-
-  const prepayRadios = document.getElementsByName('prepayMethod');
-  for (let r of prepayRadios) {
-    if (r.checked) {
-      loan.prepayMethod = r.value;
-      break;
-    }
-  }
+  // 移去单笔提前还款的直接监听，多次提前还款现由管理器弹窗统一控制配置
 
   const radios = document.getElementsByName('repayMethod');
   for (let r of radios) {
@@ -1751,6 +1780,159 @@ function closeMenuOutside(e) {
 }
 
 // 帮助 -> 关于 对话框弹窗操作
+let tempPrepayments = []; // 用于记录在提前还款管理器弹窗中未保存的临时改动
+
+/**
+ * 显示或隐藏提前还款管理器弹窗
+ */
+function showPrepayManager(isOpen) {
+  const overlay = document.getElementById('prepayManagerOverlay');
+  if (!overlay) return;
+
+  if (isOpen) {
+    if (currentSelectedId === 'summary') return;
+    const loan = loans.find(l => l.id === currentSelectedId);
+    if (!loan) return;
+
+    // 深拷贝当前贷款的提前还款配置到临时数组中
+    tempPrepayments = JSON.parse(JSON.stringify(loan.prepayments || []));
+    
+    // 清空新增区域的输入框
+    document.getElementById('dialogPrepayPeriod').value = '';
+    document.getElementById('dialogPrepayAmount').value = '';
+    
+    // 重置单选框为默认值
+    const radios = document.getElementsByName('dialogPrepayMethod');
+    radios.forEach(r => {
+      r.checked = r.value === 'shrink';
+    });
+
+    renderPrepayManagerList();
+    overlay.style.display = 'flex';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+/**
+ * 渲染提前还款管理器列表
+ */
+function renderPrepayManagerList() {
+  const tbody = document.getElementById('prepayManagerTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  // 保证排序准确
+  tempPrepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+
+  if (tempPrepayments.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#808080; padding:15px;">${t('lblNoPrepay')}</td></tr>`;
+    return;
+  }
+
+  tempPrepayments.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    const periodText = currentLang === 'zh' || currentLang === 'zh-HK'
+      ? `第 ${item.period} 期`
+      : `Period ${item.period}`;
+    const methodText = item.method === 'shrink' ? t('prepayShrink') : t('prepayReduce');
+
+    tr.innerHTML = `
+      <td>${periodText}</td>
+      <td style="font-weight:bold; color:#000080;">${formatNumber(item.amount)}</td>
+      <td>${methodText}</td>
+      <td style="text-align:center;">
+        <a href="javascript:;" onclick="removeTempPrepay(${index})" style="color:#ff0000; text-decoration:underline;">${t('linkRemove')}</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * 添加一笔提前还款记录至临时列表
+ */
+function addTempPrepay() {
+  if (currentSelectedId === 'summary') return;
+  const loan = loans.find(l => l.id === currentSelectedId);
+  if (!loan) return;
+
+  const periodVal = parseInt(document.getElementById('dialogPrepayPeriod').value);
+  const amountVal = parseFloat(document.getElementById('dialogPrepayAmount').value);
+  
+  let methodVal = 'shrink';
+  const radios = document.getElementsByName('dialogPrepayMethod');
+  for (let r of radios) {
+    if (r.checked) {
+      methodVal = r.value;
+      break;
+    }
+  }
+
+  // 参数边界合法性校验
+  if (isNaN(periodVal) || periodVal <= 0) {
+    alert(t('msgInvalidPeriod'));
+    return;
+  }
+  
+  // 期限范围校验，不能超过贷款总期限
+  const loanTerm = parseInt(loan.term) || 0;
+  if (periodVal >= loanTerm) {
+    alert(currentLang === 'zh' ? `⚠️ 警告：还款期数必须小于当前贷款的总期限 (${loanTerm}期)` : `⚠️ Warning: Repayment period must be less than the loan term (${loanTerm})`);
+    return;
+  }
+
+  if (isNaN(amountVal) || amountVal <= 0.01) {
+    alert(t('msgInvalidAmount'));
+    return;
+  }
+
+  // 重复期数拦截校验
+  const isDuplicate = tempPrepayments.some(p => parseInt(p.period) === periodVal);
+  if (isDuplicate) {
+    alert(t('msgDuplicatePeriod'));
+    return;
+  }
+
+  // 将校验后的记录推入临时列表
+  tempPrepayments.push({
+    period: periodVal,
+    amount: amountVal,
+    method: methodVal
+  });
+
+  // 刷新展示列表，重置添加输入框
+  renderPrepayManagerList();
+  document.getElementById('dialogPrepayPeriod').value = '';
+  document.getElementById('dialogPrepayAmount').value = '';
+}
+
+/**
+ * 从临时列表移除特定记录
+ */
+function removeTempPrepay(index) {
+  tempPrepayments.splice(index, 1);
+  renderPrepayManagerList();
+}
+
+/**
+ * 确定保存配置并刷新计算引擎
+ */
+function confirmPrepaySelection() {
+  if (currentSelectedId === 'summary') return;
+  const loan = loans.find(l => l.id === currentSelectedId);
+  if (!loan) return;
+
+  // 正式持久化写入当前内存模型中
+  loan.prepayments = JSON.parse(JSON.stringify(tempPrepayments));
+  loan.prepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+
+  showPrepayManager(false);
+  
+  // 触发全局重新计算及 DOM 联动刷新
+  handleParamChange();
+}
+
 function showAboutDialog() {
   const overlay = document.getElementById('aboutDialogOverlay');
   if (overlay) overlay.classList.add('show');
@@ -1958,11 +2140,32 @@ function initApp() {
     saveData();
   }
 
-  // 确保已存在的数据项拥有提前还款参数 (向下兼容)
+  // 确保已存在的数据项拥有提前还款参数 (向下兼容多笔提前还款)
   loans.forEach(loan => {
-    if (loan.prepayPeriod === undefined) loan.prepayPeriod = '';
-    if (loan.prepayAmount === undefined) loan.prepayAmount = '';
-    if (loan.prepayMethod === undefined) loan.prepayMethod = 'shrink';
+    if (!loan.prepayments) {
+      loan.prepayments = [];
+    }
+    // 如果有旧版本的单笔提前还款数据，自动迁移至新版 prepayments 数组中
+    const oldPeriod = parseInt(loan.prepayPeriod);
+    const oldAmount = parseFloat(loan.prepayAmount);
+    if (!isNaN(oldPeriod) && oldPeriod > 0 && !isNaN(oldAmount) && oldAmount > 0) {
+      // 避免重复迁移
+      const exists = loan.prepayments.some(p => parseInt(p.period) === oldPeriod);
+      if (!exists) {
+        loan.prepayments.push({
+          period: oldPeriod,
+          amount: oldAmount,
+          method: loan.prepayMethod || 'shrink'
+        });
+      }
+    }
+    
+    // 清除已弃用的老字段，避免存储冗余，并对提前还款按期数排序以确保计算流顺序
+    delete loan.prepayPeriod;
+    delete loan.prepayAmount;
+    delete loan.prepayMethod;
+    
+    loan.prepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
   });
 
   // 1. 全局应用语言包

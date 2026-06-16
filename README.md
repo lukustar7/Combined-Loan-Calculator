@@ -1,6 +1,6 @@
 # 📁 Windows 贷款组合管理器 (Multi-Loan 98)
 
-[最新版本: v2.1.1](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
+[最新版本: v2.2.0](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
 
 > 运行于浏览器的纯静态、怀旧风多笔贷款合并计算器。支持 Windows 98 经典与 Windows Vista Aero 双重皮肤。
 
@@ -25,7 +25,7 @@ python3 -m http.server 8000
 
 1. **零延迟实时重算**：全站输入框监听，数据变更毫秒级自动重算与趋势图表重绘制。
 2. **时间轴对齐合流**：支持最大装载 20 笔贷款配置，自适应对齐首次还款年月并合并生成总账表。
-3. **提前还款双模型**：等额本息/本金均支持“缩短期限”与“减少月供”模拟，最后一期平账逻辑彻底消除负利息误差。
+3. **多次提前还款模拟**：支持在贷款期内任意多次、不定期配置提前还款计划。单独提供“缩短期限”与“减少月供”两种处理方式，多次还款支持级联重新分摊，并配备经典的弹窗管理器。
 4. **双重怀旧皮肤**：一键切换 Windows 98 经典浮雕与 Windows Vista Aero 半透明毛玻璃外观，Chart.js 配色智能联动。
 5. **地道多语言热切**：简体中文、繁体中文、英文、日文四语一键秒切，CSV 导出特制 UTF-8 BOM 杜绝 Excel 乱码。
 
