@@ -61,8 +61,16 @@
               </div>
             </div>
 
-            <div class="win-group-box win-chart-panel">
+            <div class="win-group-box win-chart-panel" style="position: relative;">
               <span class="win-group-box-title" data-i18n="chartTitle">系统性能监视器 - 未来月供趋势图表</span>
+              <!-- 图表控制工具栏 -->
+              <div class="win-chart-toolbar" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; font-size: 11px; z-index: 10;">
+                <label for="chartViewSelect" data-i18n="lblChartView" style="margin-right: 4px;">查看视图：</label>
+                <select id="chartViewSelect" class="win-select" onchange="switchChartViewMode()" style="padding: 1px 4px; font-size: 11px; height: 20px;">
+                  <option value="monthly" data-i18n="optViewMonthly" selected>按月明细</option>
+                  <option value="annual" data-i18n="optViewAnnual">按年汇总</option>
+                </select>
+              </div>
               <div style="flex: 1; position: relative; min-height: 0;">
                 <canvas id="monthlyTrendChart"></canvas>
               </div>

@@ -21,6 +21,7 @@ let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项�
 let trendChart = null; // Chart.js 实例
 let globalMonthlyAggregated = []; // 全局合并月度计划的聚合缓存，用于 CSV 导出
 let currentLang = 'zh'; // 当前系统语言：'zh' (简体中文) 或 'en' (English)
+let currentChartViewMode = 'monthly'; // 图表查看视图：'monthly' (按月明细) 或 'annual' (按年汇总)
 
 // 多语言国际化全局字典包，支持 50+ 个 UI 标签及弹窗的完美互译
 const I18N_DICTS = {
@@ -122,7 +123,16 @@ const I18N_DICTS = {
     linkRemove: "移除",
     msgInvalidPeriod: "请输入合法的期数！",
     msgInvalidAmount: "请输入合法的还款金额！",
-    msgDuplicatePeriod: "该期数已配置过提前还款！"
+    msgDuplicatePeriod: "该期数已配置过提前还款！",
+    lblChartView: "查看视图：",
+    optViewMonthly: "按月明细",
+    optViewAnnual: "按年汇总",
+    lblChartView: "查看视图：",
+    optViewMonthly: "按月明细",
+    optViewAnnual: "按年汇总",
+    lblChartView: "查看视图：",
+    optViewMonthly: "按月明细",
+    optViewAnnual: "按年汇总"
   },
   "zh-HK": {
     windowTitle: "我的電腦 - 貸款組合管理器.exe",
@@ -222,7 +232,13 @@ const I18N_DICTS = {
     linkRemove: "移除",
     msgInvalidPeriod: "請輸入合法的期數！",
     msgInvalidAmount: "請輸入合法的還款金額！",
-    msgDuplicatePeriod: "該期數已配置過提前還款！"
+    msgDuplicatePeriod: "該期數已配置過提前還款！",
+    lblChartView: "查看視圖：",
+    optViewMonthly: "按月明細",
+    optViewAnnual: "按年彙總",
+    lblChartView: "查看視圖：",
+    optViewMonthly: "按月明細",
+    optViewAnnual: "按年彙總"
   },
   en: {
     windowTitle: "My Computer - Loan Portfolio Manager.exe",
@@ -322,7 +338,13 @@ const I18N_DICTS = {
     linkRemove: "Remove",
     msgInvalidPeriod: "Please enter a valid period!",
     msgInvalidAmount: "Please enter a valid prepay amount!",
-    msgDuplicatePeriod: "This period has already been configured!"
+    msgDuplicatePeriod: "This period has already been configured!",
+    lblChartView: "View Mode:",
+    optViewMonthly: "Monthly Details",
+    optViewAnnual: "Annual Summary",
+    lblChartView: "View Mode:",
+    optViewMonthly: "Monthly Details",
+    optViewAnnual: "Annual Summary"
   },
   ja: {
     windowTitle: "マイ コンピュータ - ローン ポートフォリオ マネージャー.exe",
@@ -422,7 +444,13 @@ const I18N_DICTS = {
     linkRemove: "削除",
     msgInvalidPeriod: "有効な返済回数を入力してください！",
     msgInvalidAmount: "有効な返済金額を入力してください！",
-    msgDuplicatePeriod: "この回数はすでに設定されています！"
+    msgDuplicatePeriod: "この回数はすでに設定されています！",
+    lblChartView: "表示ビュー：",
+    optViewMonthly: "月次明細",
+    optViewAnnual: "年次集計",
+    lblChartView: "表示ビュー：",
+    optViewMonthly: "月次明細",
+    optViewAnnual: "年次集計"
   }
 };;
 
@@ -861,7 +889,13 @@ function calculateAll() {
   renderSummaryTable(monthlyAggregated);
 
   // 7. 重新渲染 Chart.js 堆叠趋势图
-  renderTrendChart(sortedMonths, monthlyAggregated);
+  if (currentChartViewMode === 'annual') {
+    const annualAggregated = getAnnualAggregatedData(monthlyAggregated);
+    const annualLabels = annualAggregated.map(row => row.dateStr);
+    renderTrendChart(annualLabels, annualAggregated);
+  } else {
+    renderTrendChart(sortedMonths, monthlyAggregated);
+  }
 
   // 如果当前选中的是某笔具体的贷款，则同步更新这笔贷款对应的面板参数
   if (currentSelectedId !== 'summary') {
@@ -869,6 +903,76 @@ function calculateAll() {
     if (curLoan) {
       updateSingleLoanUI(curLoan);
     }
+  }
+}
+
+/**
+ * 将月度合并还款计划数据聚合为年度汇总数据
+ * 用于图表展示“按年视图”时的数据源
+ */
+function getAnnualAggregatedData(monthlyData) {
+  if (!monthlyData || monthlyData.length === 0) return [];
+  
+  const annualMap = {};
+
+  monthlyData.forEach(row => {
+    // 截取年份（前 4 位，例如 '2026'）
+    const yearStr = row.dateStr.slice(0, 4);
+    
+    if (!annualMap[yearStr]) {
+      annualMap[yearStr] = {
+        dateStr: yearStr,
+        payment: 0,
+        principal: 0,
+        interest: 0,
+        remaining: 0, // 年度剩余本金（以该年最末一月的剩余本金为准）
+        activeLoans: new Set(),
+        breakdown: {}
+      };
+    }
+
+    const yearRow = annualMap[yearStr];
+    yearRow.payment += row.payment;
+    yearRow.principal += row.principal;
+    yearRow.interest += row.interest;
+    
+    // 覆盖写：因为数据是按月度升序排列 of 顺序遍历的，最后一次遍历到的 row.remaining 刚好是该年度最后一个月的剩余本金
+    yearRow.remaining = row.remaining;
+
+    // 收集当年所有活跃的贷款名称
+    if (row.activeLoans) {
+      row.activeLoans.split(', ').forEach(name => {
+        if (name) yearRow.activeLoans.add(name);
+      });
+    }
+
+    // 累加当年的 breakdown 数据
+    for (var k in row.breakdown) {
+      if (!yearRow.breakdown[k]) yearRow.breakdown[k] = 0;
+      yearRow.breakdown[k] += row.breakdown[k];
+    }
+  });
+
+  // 转化为数组并格式化 activeLoans
+  const result = Object.values(annualMap).map(yearRow => {
+    yearRow.activeLoans = Array.from(yearRow.activeLoans).join(', ');
+    return yearRow;
+  });
+
+  // 按年份升序排列
+  result.sort((a, b) => parseInt(a.dateStr) - parseInt(b.dateStr));
+  return result;
+}
+
+/**
+ * 切换图表查看视图（按月/按年）
+ */
+function switchChartViewMode() {
+  const selectEl = document.getElementById('chartViewSelect');
+  if (selectEl) {
+    currentChartViewMode = selectEl.value;
+    // 触发重算与图表重绘
+    calculateAll();
   }
 }
 
@@ -935,9 +1039,31 @@ const prepaymentMarkerPlugin = {
 
         if (isNaN(x) || isNaN(y)) return;
 
+        const isLineChart = chart.config.type === 'line';
+
         if (currentTheme === 'vista') {
           // Vista 主题：精致的半透明 Aero 玻璃圆形发光球
           ctx.save();
+          
+          if (isLineChart) {
+            // 绘制 Aero 科技感发光连接线
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y - 11);
+            ctx.strokeStyle = 'rgba(0, 192, 255, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 绘制折线上的微小白发光折点
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0, 192, 255, 0.8)';
+            ctx.shadowBlur = 4;
+            ctx.fill();
+            ctx.shadowBlur = 0; // 重置阴影，避免影响后续绘制
+          }
+
           const cy = y - 18;
           
           // 1. 绘制圆形发光外圈阴影
@@ -973,6 +1099,22 @@ const prepaymentMarkerPlugin = {
         } else {
           // Windows 98 经典 / 深色主题：经典的复古红色感叹号警告三角形
           ctx.save();
+          
+          if (isLineChart) {
+            // 绘制像素风格点状虚线，符合 Win98 像素界面特征
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y - 10);
+            ctx.strokeStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.stroke();
+
+            // 绘制折线上的像素风格方块原点 (4x4px)
+            ctx.fillStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000';
+            ctx.fillRect(x - 2, y - 2, 4, 4);
+          }
+
           ctx.beginPath();
           const cy = y - 16;
           ctx.moveTo(x, cy - 8);     // 顶点
@@ -1018,6 +1160,9 @@ function renderTrendChart(months, aggregatedData) {
   // 根据当前激活的全局主题动态适配图表配色与字体
   const currentTheme = getGlobalTheme();
   
+  // 判断是否自适应升级为折线面积图：仅在“按月视图”且数据点个数大于 60 时触发
+  const isAreaChart = months.length > 60 && currentChartViewMode === 'monthly';
+
   let textColor = '#000000';
   let gridColor = '#808080';
   let gridBorderColor = '#000000';
@@ -1034,6 +1179,7 @@ function renderTrendChart(months, aggregatedData) {
   ];
 
   if (currentTheme === 'dark') {
+    // 经典深色主题：降低高饱和度配色明度，提供防刺眼体验
     textColor = '#e0e0e0';
     gridColor = '#4a4a5a';
     gridBorderColor = '#5a5a6a';
@@ -1042,16 +1188,17 @@ function renderTrendChart(months, aggregatedData) {
     retroColors = [
       { fill: '#3366ff', border: '#1a1a6e' },
       { fill: '#2ebd44', border: '#0a6a0a' },
-      { fill: '#ff4b4b', border: '#6a0a0a' },
+      { fill: '#ff4b4b', border: '#6a0a6a' },
       { fill: '#b800b8', border: '#6a0a6a' },
       { fill: '#00b8b8', border: '#0a6a6a' },
       { fill: '#b8b800', border: '#6a6a0a' }
     ];
   } else if (currentTheme === 'vista') {
+    // Windows Vista Aero：采用 Segoe UI 现代字体，轻柔质感的半透明磨砂玻璃设计
     textColor = '#1d2530';
-    gridColor = 'rgba(0, 0, 0, 0.08)'; // 轻柔淡雅的灰色网格线
+    gridColor = 'rgba(0, 0, 0, 0.08)'; // 柔和暗色网格，搭配 Aero 白底面板
     gridBorderColor = 'rgba(0, 0, 0, 0.15)';
-    tooltipBg = 'rgba(255, 255, 255, 0.9)'; // 高档半透明白
+    tooltipBg = 'rgba(255, 255, 255, 0.9)'; // 高档半透明 white 磨砂气泡
     tooltipText = '#1d2530';
     fontName = '"Segoe UI", "Microsoft YaHei", -apple-system, sans-serif';
     retroColors = [
@@ -1064,7 +1211,7 @@ function renderTrendChart(months, aggregatedData) {
     ];
   }
 
-  // 生成 Chart.js 所需的条形堆叠数据集
+  // 生成 Chart.js 所需的数据集
   const datasets = loans.map((loan, index) => {
     const color = retroColors[index % retroColors.length];
     
@@ -1073,22 +1220,59 @@ function renderTrendChart(months, aggregatedData) {
       return row.breakdown[loan.id] || 0;
     });
 
-    return {
+    let fillBg = color.fill;
+    let borderCol = color.border;
+
+    // 自适应调整折线面积图下的填充与描边，提升多主题下的玻璃通透质感与暗色护眼发光感
+    if (isAreaChart) {
+      if (currentTheme === 'dark') {
+        // 暗色面积图：将 Hex 颜色动态转换为半透明填充 (0.45) + 发光亮描边 (0.9)
+        if (fillBg.startsWith('#')) {
+          const r = parseInt(fillBg.slice(1, 3), 16);
+          const g = parseInt(fillBg.slice(3, 5), 16);
+          const b = parseInt(fillBg.slice(5, 7), 16);
+          fillBg = `rgba(${r}, ${g}, ${b}, 0.45)`;
+          borderCol = `rgba(${r}, ${g}, ${b}, 0.9)`;
+        }
+      } else if (currentTheme === 'vista') {
+        // Vista 面积图：降为 0.35 透明度，形成晶莹剔透的毛玻璃极光叠色
+        if (fillBg.startsWith('rgba')) {
+          fillBg = fillBg.replace('0.75', '0.35');
+        }
+      }
+    }
+
+    const ds = {
       label: loan.name,
       loanId: loan.id, // 额外保存 loanId，以便 tooltip 能精准匹配其 prepay 值
       data: dataPoints,
-      backgroundColor: color.fill,
-      borderColor: color.border,
-      borderWidth: currentTheme === 'vista' ? 1.0 : 1.5,
-      barPercentage: currentTheme === 'vista' ? 0.85 : 1.0, // Vista 下柱子略微拉开间距，显得优雅现代
-      categoryPercentage: currentTheme === 'vista' ? 0.85 : 1.0,
-      stack: 'combinedStack'      // 启动堆叠模式
+      backgroundColor: fillBg,
+      borderColor: borderCol,
+      stack: 'combinedStack' // 启动堆叠模式
     };
+
+    if (isAreaChart) {
+      // 启用折线面积图专属配置
+      ds.type = 'line';
+      ds.fill = true;
+      ds.pointRadius = 0; // 默认隐藏折点，防止画面拥挤
+      ds.pointHoverRadius = 5; // hover 时高亮显示，保障交互精确度
+      ds.tension = 0.2; // 柔和微弧度，增加物化流畅度
+      ds.borderWidth = currentTheme === 'vista' ? 2.0 : 1.5;
+    } else {
+      // 柱状堆叠图专属配置
+      ds.type = 'bar';
+      ds.borderWidth = currentTheme === 'vista' ? 1.0 : 1.5;
+      ds.barPercentage = currentTheme === 'vista' ? 0.85 : 1.0; // Vista 下柱体留白间距，符合现代 UI 规范
+      ds.categoryPercentage = currentTheme === 'vista' ? 0.85 : 1.0;
+    }
+
+    return ds;
   });
 
-  // 创建符合当前系统皮肤质感的像素/现代图表配置
+  // 创建符合当前 system 皮肤质感的像素/现代图表配置
   trendChart = new Chart(ctx, {
-    type: 'bar', // 柱状堆叠图
+    type: isAreaChart ? 'line' : 'bar', // 自适应图表类别
     data: {
       labels: months,
       datasets: datasets
@@ -1096,12 +1280,12 @@ function renderTrendChart(months, aggregatedData) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // 优化图表交互模式：只要鼠标/手指落在当月柱体的垂直通道内（包括柱体上方的标记点），就能立即激活该列的 Tooltip 详情显示
+      // 优化图表交互模式：只要鼠标/手指落在当前时段的垂直通道内，就能激活 Tooltip
       interaction: {
         mode: 'index',
         intersect: false
       },
-      animation: currentTheme === 'vista' ? { duration: 400 } : false, // Vista 主题下开启柔和过度动画，Win98 保持极速渲染
+      animation: currentTheme === 'vista' ? { duration: 400 } : false, // Vista 启用 Aero 动态过渡，Win98 保持极速响应
       plugins: {
         legend: {
           position: 'top',
