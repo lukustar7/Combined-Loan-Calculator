@@ -1368,11 +1368,20 @@ body.theme-vista .win-group-box {
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.3);
+  padding: 10px 12px;
 }
 
 body.theme-vista .win-group-box-title {
+  position: relative;
+  top: 0;
+  left: 0;
   background-color: transparent;
   color: #1e528e;
+  display: block;
+  font-weight: bold;
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 11px;
 }
 
 body.theme-vista .win-summary-card {
@@ -1580,5 +1589,70 @@ body.theme-vista .win-dialog-body {
   body.theme-vista .win98-desktop {
     padding-bottom: 40px; /* 对应 Vista 任务栏在移动端的 40px 高度 */
   }
+}
+
+/* ==========================================
+   Windows Vista Aero 细节体验大升级
+   ========================================== */
+
+/* 1. Vista Aero 磨砂滚动条定制 */
+body.theme-vista ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+body.theme-vista ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 5px;
+}
+body.theme-vista ::-webkit-scrollbar-thumb {
+  background: rgba(30, 82, 142, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+body.theme-vista ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 192, 255, 0.5);
+  box-shadow: 0 0 6px rgba(0, 192, 255, 0.5);
+}
+
+/* 2. Vista Aero 弹窗与开始菜单 3D 渐变动画 */
+@keyframes vistaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes vistaScaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes vistaStartMenuIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+body.theme-vista .win-dialog-overlay {
+  animation: vistaFadeIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+body.theme-vista .win-dialog {
+  animation: vistaScaleIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1);
+  transform-origin: center;
+}
+body.theme-vista .win-start-menu.show {
+  animation: vistaStartMenuIn 0.18s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+/* 3. Vista Aero 禁用按钮样式重塑 */
+body.theme-vista .win-btn:disabled {
+  background: rgba(200, 210, 220, 0.2);
+  color: rgba(100, 110, 120, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  text-shadow: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* 4. Vista Aero 弹窗标题栏切角防溢出 */
+body.theme-vista .win-dialog .win-titlebar {
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
 }
 
