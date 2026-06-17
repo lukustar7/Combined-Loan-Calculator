@@ -1,6 +1,6 @@
 # 📁 Windows 贷款组合管理器 (Multi-Loan 98)
 
-[最新版本: v2.2.0](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
+[最新版本: v2.2.1](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
 
 > 运行于浏览器的纯静态、怀旧风多笔贷款合并计算器。支持 Windows 98 经典与 Windows Vista Aero 双重皮肤。
 
