@@ -80,7 +80,6 @@ const I18N_DICTS = {
     tabAppearance: "外观(A)",
     lblScheme: "方案(S)：",
     schemeStandard: "Windows 经典",
-    schemeDark: "经典深色",
     schemeVista: "Windows Vista",
     btnApply: "应用(A)",
     btnCancel: "取消",
@@ -189,7 +188,6 @@ const I18N_DICTS = {
     tabAppearance: "外觀(A)",
     lblScheme: "方案(S)：",
     schemeStandard: "Windows 經典",
-    schemeDark: "經典深色",
     schemeVista: "Windows Vista",
     btnApply: "應用(A)",
     btnCancel: "取消",
@@ -295,7 +293,6 @@ const I18N_DICTS = {
     tabAppearance: "Appearance",
     lblScheme: "Scheme: ",
     schemeStandard: "Windows Standard",
-    schemeDark: "Windows Dark",
     schemeVista: "Windows Vista",
     btnApply: "Apply",
     btnCancel: "Cancel",
@@ -307,7 +304,7 @@ const I18N_DICTS = {
     menuAbout: "About Multi-Loan 98...",
     aboutTitle: "About Loan Portfolio Manager",
     aboutVersion: "Version: v{version}",
-    aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, dark mode and i18n support。",
+    aboutDesc: "A retro utility for merging & analyzing multiple debts. Real-time recalculation, prepay simulator, CSV export, theme customization and i18n support.",
     aboutCopy: "Copyright (C) 1998 - 2026.",
     btnOK: "OK",
     btn5Yr: "5 Yrs",
@@ -401,7 +398,6 @@ const I18N_DICTS = {
     tabAppearance: "デザイン(A)",
     lblScheme: "配色(S)：",
     schemeStandard: "Windows クラシック",
-    schemeDark: "クラシック ダーク",
     schemeVista: "Windows Vista",
     btnApply: "適用(A)",
     btnCancel: "キャンセル",
@@ -1105,13 +1101,13 @@ const prepaymentMarkerPlugin = {
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(x, y - 10);
-            ctx.strokeStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000';
+            ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1;
             ctx.setLineDash([2, 2]);
             ctx.stroke();
 
             // 绘制折线上的像素风格方块原点 (4x4px)
-            ctx.fillStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000';
+            ctx.fillStyle = '#000000';
             ctx.fillRect(x - 2, y - 2, 4, 4);
           }
 
@@ -1124,7 +1120,7 @@ const prepaymentMarkerPlugin = {
           ctx.fillStyle = '#ff0000'; // 醒目的复古红
           ctx.fill();
           ctx.lineWidth = 1.5;
-          ctx.strokeStyle = currentTheme === 'dark' ? '#dfdfdf' : '#000000'; // 边框自适应
+          ctx.strokeStyle = '#000000'; // 边框自适应
           ctx.stroke();
           
           // 绘制内部的小白色惊叹号
@@ -1178,22 +1174,7 @@ function renderTrendChart(months, aggregatedData) {
     { fill: '#808000', border: '#000000' }  // 暗金泥土黄
   ];
 
-  if (currentTheme === 'dark') {
-    // 经典深色主题：降低高饱和度配色明度，提供防刺眼体验
-    textColor = '#e0e0e0';
-    gridColor = '#4a4a5a';
-    gridBorderColor = '#5a5a6a';
-    tooltipBg = '#1a1a2a';
-    tooltipText = '#ffffff';
-    retroColors = [
-      { fill: '#3366ff', border: '#1a1a6e' },
-      { fill: '#2ebd44', border: '#0a6a0a' },
-      { fill: '#ff4b4b', border: '#6a0a6a' },
-      { fill: '#b800b8', border: '#6a0a6a' },
-      { fill: '#00b8b8', border: '#0a6a6a' },
-      { fill: '#b8b800', border: '#6a6a0a' }
-    ];
-  } else if (currentTheme === 'vista') {
+  if (currentTheme === 'vista') {
     // Windows Vista Aero：采用 Segoe UI 现代字体，轻柔质感的半透明磨砂玻璃设计
     textColor = '#1d2530';
     gridColor = 'rgba(0, 0, 0, 0.08)'; // 柔和暗色网格，搭配 Aero 白底面板
@@ -1225,16 +1206,7 @@ function renderTrendChart(months, aggregatedData) {
 
     // 自适应调整折线面积图下的填充与描边，提升多主题下的玻璃通透质感与暗色护眼发光感
     if (isAreaChart) {
-      if (currentTheme === 'dark') {
-        // 暗色面积图：将 Hex 颜色动态转换为半透明填充 (0.45) + 发光亮描边 (0.9)
-        if (fillBg.startsWith('#')) {
-          const r = parseInt(fillBg.slice(1, 3), 16);
-          const g = parseInt(fillBg.slice(3, 5), 16);
-          const b = parseInt(fillBg.slice(5, 7), 16);
-          fillBg = `rgba(${r}, ${g}, ${b}, 0.45)`;
-          borderCol = `rgba(${r}, ${g}, ${b}, 0.9)`;
-        }
-      } else if (currentTheme === 'vista') {
+      if (currentTheme === 'vista') {
         // Vista 面积图：降为 0.35 透明度，形成晶莹剔透的毛玻璃极光叠色
         if (fillBg.startsWith('rgba')) {
           fillBg = fillBg.replace('0.75', '0.35');
@@ -1303,7 +1275,7 @@ function renderTrendChart(months, aggregatedData) {
           titleFont: { family: fontName, size: 11, weight: 'bold' },
           bodyColor: tooltipText,
           bodyFont: { family: fontName, size: 11 },
-          borderColor: currentTheme === 'vista' ? 'rgba(0,0,0,0.15)' : (currentTheme === 'dark' ? '#5a5a6a' : '#000000'),
+          borderColor: currentTheme === 'vista' ? 'rgba(0,0,0,0.15)' : '#000000',
           borderWidth: 1,
           cornerRadius: currentTheme === 'vista' ? 4 : 0, // Vista 主题下气泡有小圆角
           callbacks: {
@@ -1351,6 +1323,7 @@ function renderTrendChart(months, aggregatedData) {
           }
         },
         y: {
+          min: 0,
           stacked: true,
           grid: {
             color: gridColor,
@@ -2164,15 +2137,25 @@ function showDisplayProperties(show) {
   }
 }
 
-// 获取当前的全局主题，默认为 'standard'
+// 获取当前的全局主题，默认为 'standard'，并向下兼容深色偏好至 standard
 function getGlobalTheme() {
   const savedTheme = localStorage.getItem('WIN_THEME_PREF');
-  if (savedTheme === 'vista' || savedTheme === 'dark' || savedTheme === 'standard') {
+  if (savedTheme === 'dark') {
+    localStorage.setItem('WIN_THEME_PREF', 'standard');
+    localStorage.removeItem('WIN98_DARK_THEME');
+    return 'standard';
+  }
+  if (savedTheme === 'vista' || savedTheme === 'standard') {
     return savedTheme;
   }
   // 向后兼容旧版本的深色模式配置
   const oldDark = localStorage.getItem('WIN98_DARK_THEME');
-  return oldDark === 'true' ? 'dark' : 'standard';
+  if (oldDark === 'true') {
+    localStorage.setItem('WIN_THEME_PREF', 'standard');
+    localStorage.removeItem('WIN98_DARK_THEME');
+    return 'standard';
+  }
+  return 'standard';
 }
 
 // 预览区局部主题变更事件句柄
@@ -2211,16 +2194,11 @@ function applyThemeSelection() {
   // 2. 挂载新的主题类
   document.body.classList.add(`theme-${targetTheme}`);
   
-  // 3. 为了向下兼容原有的部分 CSS 选择器，如果是经典深色主题，则同步挂载 .dark-theme
-  if (targetTheme === 'dark') {
-    document.body.classList.add('dark-theme');
-  }
-  
-  // 4. 将最新主题偏好保存至浏览器 LocalStorage
+  // 3. 将最新主题偏好保存至浏览器 LocalStorage
   localStorage.setItem('WIN_THEME_PREF', targetTheme);
-  localStorage.setItem('WIN98_DARK_THEME', targetTheme === 'dark' ? 'true' : 'false');
+  localStorage.removeItem('WIN98_DARK_THEME');
   
-  // 5. 触发零延迟重算并重绘 Chart.js 图表
+  // 4. 触发零延迟重算并重绘 Chart.js 图表
   calculateAll();
 }
 
@@ -2302,9 +2280,6 @@ function initApp() {
   const currentTheme = getGlobalTheme();
   document.body.classList.remove('theme-standard', 'theme-dark', 'theme-vista', 'dark-theme');
   document.body.classList.add(`theme-${currentTheme}`);
-  if (currentTheme === 'dark') {
-    document.body.classList.add('dark-theme');
-  }
 
   // 加载缓存数据
   const savedData = localStorage.getItem('WIN98_LOANS_DATA');
