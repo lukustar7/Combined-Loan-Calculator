@@ -2,9 +2,9 @@
  * ============================================================================
  * Windows 98 经典贷款组合管理器核心脚本 (Multi-Loan Manager 98 Core JS Engine)
  * ============================================================================
- * 【Antigravity 顶尖重构版】：包含完整中英文双语国际化 (i18n)、提前还款模拟、
+ * 【Antigravity 顶尖重构版】：包含完整多语言国际化 (i18n)、提前还款模拟、
  * 快捷期限选择、千分位数字金融格式化、UTF-8 BOM 防乱码一键 CSV 导出、
- * 零延迟实时计算架构、O(1)年月直算以及黑客深色主题联动 Chart.js 重绘皮肤。
+ * 零延迟实时计算架构、O(1)年月直算以及双主题联动 Chart.js 重绘皮肤。
  * 
  * 遵守全局核心守则：写出的所有代码必须带有详尽的【中文注释】，解释核心逻辑在做什么。
  * ============================================================================
@@ -125,12 +125,6 @@ const I18N_DICTS = {
     msgDuplicatePeriod: "该期数已配置过提前还款！",
     lblChartView: "查看视图：",
     optViewMonthly: "按月明细",
-    optViewAnnual: "按年汇总",
-    lblChartView: "查看视图：",
-    optViewMonthly: "按月明细",
-    optViewAnnual: "按年汇总",
-    lblChartView: "查看视图：",
-    optViewMonthly: "按月明细",
     optViewAnnual: "按年汇总"
   },
   "zh-HK": {
@@ -231,9 +225,6 @@ const I18N_DICTS = {
     msgInvalidPeriod: "請輸入合法的期數！",
     msgInvalidAmount: "請輸入合法的還款金額！",
     msgDuplicatePeriod: "該期數已配置過提前還款！",
-    lblChartView: "查看視圖：",
-    optViewMonthly: "按月明細",
-    optViewAnnual: "按年彙總",
     lblChartView: "查看視圖：",
     optViewMonthly: "按月明細",
     optViewAnnual: "按年彙總"
@@ -338,9 +329,6 @@ const I18N_DICTS = {
     msgDuplicatePeriod: "This period has already been configured!",
     lblChartView: "View Mode:",
     optViewMonthly: "Monthly Details",
-    optViewAnnual: "Annual Summary",
-    lblChartView: "View Mode:",
-    optViewMonthly: "Monthly Details",
     optViewAnnual: "Annual Summary"
   },
   ja: {
@@ -443,9 +431,6 @@ const I18N_DICTS = {
     msgDuplicatePeriod: "この回数はすでに設定されています！",
     lblChartView: "表示ビュー：",
     optViewMonthly: "月次明細",
-    optViewAnnual: "年次集計",
-    lblChartView: "表示ビュー：",
-    optViewMonthly: "月次明細",
     optViewAnnual: "年次集計"
   }
 };;
@@ -464,6 +449,197 @@ const DEFAULT_LOANS = [
     prepayments: []    // 提前还款计划列表，格式：[{ period: 12, amount: 50000, method: 'shrink' }]
   }
 ];
+
+const STORAGE_KEY = 'WIN98_LOANS_DATA'; // 浏览器本地缓存键名，集中定义避免散落字符串
+const THEME_PREF_KEY = 'WIN_THEME_PREF'; // 当前主题缓存键名
+const LEGACY_DARK_THEME_KEY = 'WIN98_DARK_THEME'; // 旧版深色主题缓存键名，用于兼容迁移
+const LANG_PREF_KEY = 'WIN98_LANG'; // 当前语言缓存键名
+const MAX_LOANS = 20; // 单机页面允许同时管理的贷款上限
+const MAX_LOAN_AMOUNT = 1000000000000; // 单笔贷款金额上限：1 万亿元，防止 Infinity/NaN 污染计算链
+const MAX_RATE_PERCENT = 100; // 年化利率上限：100%，足够覆盖极端测试，同时避免公式溢出
+const MAX_LOAN_TERM_MONTHS = 3600; // 最长期限：300 年，控制循环规模
+const MIN_START_YEAR = 1990; // 与 HTML 输入框保持一致的最小首还年份
+const MAX_START_YEAR = 2100; // 与 HTML 输入框保持一致的最大首还年份
+const MAX_LOAN_NAME_LENGTH = 80; // 贷款名称长度上限，防止超长文本撑爆树形目录与 CSV 文件名
+
+/**
+ * 深拷贝默认贷款配置。
+ * 默认数据只作为模板使用，任何运行期修改都必须落到独立对象，避免污染出厂配置。
+ */
+function cloneDefaultLoans() {
+  return JSON.parse(JSON.stringify(DEFAULT_LOANS));
+}
+
+/**
+ * 将外部输入转换为有限数字。
+ * Number('1e309') 会得到 Infinity，这类值必须拦截，否则图表和表格会被 NaN/Infinity 传染。
+ */
+function toFiniteNumber(value, fallback = 0) {
+  if (typeof value === 'string' && value.trim() === '') return fallback;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+/**
+ * 将数字限制在指定区间。
+ * 输入框的 min/max 只能限制正常手输，不能限制 LocalStorage、控制台或旧版本坏数据。
+ */
+function clampNumber(value, min, max, fallback = min) {
+  const numericValue = toFiniteNumber(value, fallback);
+  return Math.min(max, Math.max(min, numericValue));
+}
+
+/**
+ * 将整数限制在指定区间。
+ * 期限、年份和月份都走整数通道，避免 12.8 个月、NaN 年这类脏值进入计算。
+ */
+function clampInteger(value, min, max, fallback = min) {
+  const numericValue = Math.trunc(toFiniteNumber(value, fallback));
+  return Math.min(max, Math.max(min, numericValue));
+}
+
+/**
+ * 清洗贷款名称。
+ * 去掉不可见控制字符并限制长度，避免树节点、窗口标题和 CSV 文件名出现异常文本。
+ */
+function sanitizeLoanName(value, fallback) {
+  const rawText = typeof value === 'string' ? value : '';
+  const cleanText = rawText.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  if (!cleanText) return fallback;
+  return cleanText.slice(0, MAX_LOAN_NAME_LENGTH);
+}
+
+/**
+ * 清洗内部贷款 ID。
+ * ID 会被用作对象键名，因此必须限制为普通字母、数字、下划线和连字符。
+ */
+function sanitizeLoanId(value, fallback) {
+  const rawText = typeof value === 'string' ? value : '';
+  const cleanText = rawText.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48);
+  if (!cleanText || cleanText === '__proto__' || cleanText === 'constructor' || cleanText === 'prototype') {
+    return fallback;
+  }
+  return cleanText;
+}
+
+/**
+ * 清洗提前还款列表。
+ * 多端协作和旧缓存都可能带入脏结构，因此这里统一校验期数、金额和处理方式。
+ */
+function sanitizePrepayments(rawPrepayments, loanTerm = MAX_LOAN_TERM_MONTHS) {
+  if (!Array.isArray(rawPrepayments)) return [];
+  const seenPeriods = new Set();
+  const safeTerm = clampInteger(loanTerm, 0, MAX_LOAN_TERM_MONTHS, MAX_LOAN_TERM_MONTHS);
+  const sanitized = [];
+
+  rawPrepayments.forEach(item => {
+    if (!item || typeof item !== 'object') return;
+    const period = clampInteger(item.period, 1, MAX_LOAN_TERM_MONTHS, 0);
+    const amount = clampNumber(item.amount, 0, MAX_LOAN_AMOUNT, 0);
+    const method = item.method === 'reduce' ? 'reduce' : 'shrink';
+
+    // 提前还款期数必须落在贷款有效期内，且同一期只保留第一条，避免重复扣款。
+    if (period <= 0 || amount <= 0 || (safeTerm > 0 && period >= safeTerm) || seenPeriods.has(period)) {
+      return;
+    }
+    seenPeriods.add(period);
+    sanitized.push({ period, amount, method });
+  });
+
+  sanitized.sort((a, b) => a.period - b.period);
+  return sanitized;
+}
+
+/**
+ * 清洗单笔贷款对象。
+ * 这是 LocalStorage 迁移和运行期兜底的统一入口，确保核心计算永远吃到结构完整的数据。
+ */
+function sanitizeLoan(rawLoan, index = 0) {
+  const safeIndex = Math.max(0, index);
+  const fallbackLoan = DEFAULT_LOANS[0];
+  const source = rawLoan && typeof rawLoan === 'object' ? rawLoan : {};
+  const fallbackName = `${t('loanDefaultName')} ${safeIndex + 1}`;
+  const term = clampInteger(source.term, 0, MAX_LOAN_TERM_MONTHS, fallbackLoan.term);
+  let prepayments = sanitizePrepayments(source.prepayments, term);
+
+  // 向下兼容旧版单笔提前还款字段，迁移后只保留新版 prepayments 数组。
+  const oldPeriod = clampInteger(source.prepayPeriod, 1, MAX_LOAN_TERM_MONTHS, 0);
+  const oldAmount = clampNumber(source.prepayAmount, 0, MAX_LOAN_AMOUNT, 0);
+  if (oldPeriod > 0 && oldAmount > 0 && (term <= 0 || oldPeriod < term)) {
+    const exists = prepayments.some(item => item.period === oldPeriod);
+    if (!exists) {
+      prepayments.push({
+        period: oldPeriod,
+        amount: oldAmount,
+        method: source.prepayMethod === 'reduce' ? 'reduce' : 'shrink'
+      });
+      prepayments.sort((a, b) => a.period - b.period);
+    }
+  }
+
+  return {
+    id: sanitizeLoanId(source.id, `loan_${safeIndex + 1}`),
+    name: sanitizeLoanName(source.name, fallbackName),
+    amount: clampNumber(source.amount, 0, MAX_LOAN_AMOUNT, fallbackLoan.amount),
+    rate: clampNumber(source.rate, 0, MAX_RATE_PERCENT, fallbackLoan.rate),
+    method: source.method === 'ACP' ? 'ACP' : 'ACPI',
+    term,
+    startYear: clampInteger(source.startYear, MIN_START_YEAR, MAX_START_YEAR, fallbackLoan.startYear),
+    startMonth: clampInteger(source.startMonth, 1, 12, fallbackLoan.startMonth),
+    prepayments
+  };
+}
+
+/**
+ * 清洗贷款数组并修复重复 ID。
+ * 如果缓存结构不是数组，直接回退默认数据，避免启动阶段崩溃。
+ */
+function sanitizeLoans(rawLoans) {
+  if (!Array.isArray(rawLoans)) {
+    return cloneDefaultLoans().map((loan, index) => sanitizeLoan(loan, index));
+  }
+
+  const usedIds = new Set();
+  const sanitizedLoans = rawLoans.slice(0, MAX_LOANS).map((loan, index) => {
+    const sanitized = sanitizeLoan(loan, index);
+    let baseId = sanitized.id || `loan_${index + 1}`;
+    let nextId = baseId;
+    let suffix = 2;
+    while (usedIds.has(nextId)) {
+      nextId = `${baseId}_${suffix}`;
+      suffix++;
+    }
+    usedIds.add(nextId);
+    sanitized.id = nextId;
+    return sanitized;
+  });
+
+  return sanitizedLoans.length > 0 ? sanitizedLoans : cloneDefaultLoans().map((loan, index) => sanitizeLoan(loan, index));
+}
+
+/**
+ * CSV 单元格安全转义。
+ * 除了逗号和双引号，还要防止 Excel 将 =、+、-、@ 开头的文本当作公式执行。
+ */
+function escapeCSVCell(value) {
+  let text = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@]/.test(text)) {
+    text = `'${text}`;
+  }
+  if (/[",\r\n]/.test(text)) {
+    text = `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+/**
+ * 下载文件名安全清洗。
+ * 浏览器不会真的按路径写入，但保守去掉路径分隔符能避免跨平台下载体验异常。
+ */
+function sanitizeFileName(value, fallback = 'export') {
+  const safeName = sanitizeLoanName(value, fallback).replace(/[\\/:*?"<>|]/g, '_');
+  return safeName || fallback;
+}
 
 // ==========================================
 // 2. 国际化与数字格式化核心工具
@@ -516,32 +692,18 @@ function applyTranslations() {
   const windowTitle = document.getElementById('windowTitle');
   const taskbarTitle = document.getElementById('taskbarTitle');
   
-  let summaryTitle = 'Loan Portfolio.cfg';
-  let propText = 'Properties';
-  let propTask = 'Props';
-  
-  if (currentLang === 'zh') {
-    summaryTitle = '贷款组合管理器.cfg';
-    propText = '属性';
-    propTask = '属性';
-  } else if (currentLang === 'zh-HK') {
-    summaryTitle = '貸款組合管理器.cfg';
-    propText = '屬性';
-    propTask = '屬性';
-  } else if (currentLang === 'ja') {
-    summaryTitle = 'ローンポートフォリオ.cfg';
-    propText = 'プロパティ';
-    propTask = '詳細';
-  }
+  let summaryTitle = getPortfolioFileName();
+  let propText = getPropertyLabel();
+  let propTask = getPropertyTaskLabel();
   
   if (currentSelectedId === 'summary') {
     if (windowTitle) windowTitle.innerText = t('windowTitle');
-    if (taskbarTitle) taskbarTitle.innerText = '📁 ' + summaryTitle;
+    if (taskbarTitle) taskbarTitle.innerHTML = `<span class="win-icon-folder"></span>${escapeHTML(summaryTitle)}`;
   } else {
     const curLoan = loans.find(l => l.id === currentSelectedId);
     if (curLoan) {
       if (windowTitle) windowTitle.innerText = `${propText} - ${curLoan.name}.cfg`;
-      if (taskbarTitle) taskbarTitle.innerText = `📄 ${propTask}: ${curLoan.name}.cfg`;
+      if (taskbarTitle) taskbarTitle.innerHTML = `<span class="win-icon-file"></span>${escapeHTML(`${propTask}: ${curLoan.name}.cfg`)}`;
     }
   }
 
@@ -558,7 +720,7 @@ function applyTranslations() {
  * 自适应多国语言区域设置，提高全局金融易读性
  */
 function formatNumber(num) {
-  if (num === null || num === undefined || isNaN(num)) return '0.00';
+  if (num === null || num === undefined || !Number.isFinite(Number(num))) return '0.00';
   let locale = 'en-US';
   if (currentLang === 'zh') locale = 'zh-CN';
   else if (currentLang === 'zh-HK') locale = 'zh-HK';
@@ -582,6 +744,101 @@ function getCurrencyUnit() {
   return '¥';
 }
 
+/**
+ * 组合贷款总览文件名，用于窗口标题、任务栏和树形目录。
+ */
+function getPortfolioFileName() {
+  if (currentLang === 'zh') return '贷款组合管理器.cfg';
+  if (currentLang === 'zh-HK') return '貸款組合管理器.cfg';
+  if (currentLang === 'ja') return 'ローンポートフォリオ.cfg';
+  return 'Loan Portfolio.cfg';
+}
+
+/**
+ * 单笔贷款属性窗口标题词。
+ */
+function getPropertyLabel() {
+  if (currentLang === 'zh') return '属性';
+  if (currentLang === 'zh-HK') return '屬性';
+  if (currentLang === 'ja') return 'プロパティ';
+  return 'Properties';
+}
+
+/**
+ * 任务栏中单笔贷款属性窗口的短标签。
+ */
+function getPropertyTaskLabel() {
+  if (currentLang === 'zh') return '属性';
+  if (currentLang === 'zh-HK') return '屬性';
+  if (currentLang === 'ja') return '詳細';
+  return 'Props';
+}
+
+/**
+ * 左侧资源树的汇总节点名称。
+ */
+function getSummaryTreeLabel() {
+  if (currentLang === 'zh') return '贷款组合汇总.sys';
+  if (currentLang === 'zh-HK') return '貸款組合彙總.sys';
+  if (currentLang === 'ja') return 'ローン集計.sys';
+  return 'Loan_Portfolio.sys';
+}
+
+/**
+ * 左侧资源树的新增贷款入口文案。
+ */
+function getAddLoanTreeLabel(isLimitReached) {
+  if (isLimitReached) {
+    if (currentLang === 'zh') return '新增贷款... (已达20笔上限)';
+    if (currentLang === 'zh-HK') return '新增貸款... (已達20筆上限)';
+    if (currentLang === 'ja') return 'ローン追加... (20件上限)';
+    return 'Add Loan... (Max 20 Reached)';
+  }
+  if (currentLang === 'zh') return '新增贷款.lnk';
+  if (currentLang === 'zh-HK') return '新增貸款.lnk';
+  if (currentLang === 'ja') return 'ローン追加.lnk';
+  return 'Add_Loan.lnk';
+}
+
+/**
+ * 期数文本统一格式化，避免繁体/日文界面混入英文缩写。
+ */
+function getPeriodLabel(period) {
+  if (currentLang === 'zh' || currentLang === 'zh-HK') return `第 ${period} 期`;
+  if (currentLang === 'ja') return `第 ${period} 回`;
+  return `Period ${period}`;
+}
+
+/**
+ * CSV 表头按当前语言输出。
+ */
+function getSummaryCSVHeaders() {
+  if (currentLang === 'zh') return ['还款年月', '月供总额(元)', '本金总额(元)', '利息总额(元)', '剩余本金(元)', '活跃贷款'];
+  if (currentLang === 'zh-HK') return ['還款年月', '月供總額(元)', '本金總額(元)', '利息總額(元)', '剩餘本金(元)', '活躍貸款'];
+  if (currentLang === 'ja') return ['返済年月', '月返済額(円)', '元金総額(円)', '利息総額(円)', '残り元金(円)', '有効ローン'];
+  return ['Repay Month', 'Total Payment', 'Total Principal', 'Total Interest', 'Remaining Principal', 'Active Loans'];
+}
+
+/**
+ * 单笔贷款 CSV 表头按当前语言输出。
+ */
+function getSingleCSVHeaders() {
+  if (currentLang === 'zh') return ['期数', '还款年月', '当月月供(元)', '偿还本金(元)', '偿还利息(元)', '剩余本金(元)', '其中提前还款(元)'];
+  if (currentLang === 'zh-HK') return ['期數', '還款年月', '當月月供(元)', '償還本金(元)', '償還利息(元)', '剩餘本金(元)', '其中提前還款(元)'];
+  if (currentLang === 'ja') return ['回数', '返済年月', '月返済額(円)', '元金返済額(円)', '利息返済額(円)', '残り元金(円)', '繰上返済額(円)'];
+  return ['Period', 'Repay Month', 'Payment Portion', 'Principal Portion', 'Interest Portion', 'Remaining Principal', 'Prepayment'];
+}
+
+/**
+ * 单笔贷款导出文件名后缀。
+ */
+function getSingleCSVFileSuffix() {
+  if (currentLang === 'zh') return '还款明细计划表';
+  if (currentLang === 'zh-HK') return '還款明細計劃表';
+  if (currentLang === 'ja') return '返済明細計画表';
+  return 'Repayment_Plan';
+}
+
 // ==========================================
 // 3. 核心数学计算算法 (Loan Core Formulas)
 // ==========================================
@@ -591,9 +848,9 @@ function getCurrencyUnit() {
  * 【Antigravity 顶尖重构】：彻底消除 while 循环，升级为 O(1) 的纯数学整除与求余直算
  */
 function getMonthYearOffset(startYear, startMonth, offsetMonths) {
-  let year = parseInt(startYear);
+  let year = clampInteger(startYear, MIN_START_YEAR, MAX_START_YEAR, DEFAULT_LOANS[0].startYear);
   // 自然月转换为以 0 代表 1 月的基础偏移，再加上目标累加月数
-  let totalMonths = (parseInt(startMonth) - 1) + parseInt(offsetMonths);
+  let totalMonths = (clampInteger(startMonth, 1, 12, DEFAULT_LOANS[0].startMonth) - 1) + clampInteger(offsetMonths, 0, MAX_LOAN_TERM_MONTHS, 0);
   
   // 采用数学向下取整 Math.floor 计算年份增加的偏移量，完美包容正负的大数值区间
   let offsetYears = Math.floor(totalMonths / 12);
@@ -610,10 +867,15 @@ function getMonthYearOffset(startYear, startMonth, offsetMonths) {
  * 2. 重写最后一期平账逻辑：利息单独按期初剩余本金直算，本金等于所有剩余本金，彻底解决负利息与浮点精度顽疾。
  */
 function calculateSingleLoan(loan) {
-  const amount = parseFloat(loan.amount) || 0; // 金额单位本即为“元”，无需再乘以一万
-  const annualRate = Math.max(0, parseFloat(loan.rate) || 0) / 100; // 强制年化利率不能为负数，彻底解决分母为 0 导致 Infinity 的漏洞
+  const safeLoan = sanitizeLoan(loan, 0);
+  const amount = safeLoan.amount; // 金额单位本即为“元”，无需再乘以一万
+  const annualRate = safeLoan.rate / 100; // 统一经过有限数字与区间清洗，避免 Infinity 进入公式
   const monthlyRate = annualRate / 12; // 月利率
-  const term = Math.min(3600, parseInt(loan.term) || 0); // 限制期限上限最高300年(3600期)，防止海量循环卡死主线程
+  const term = safeLoan.term; // 限制期限上限最高300年(3600期)，防止海量循环卡死主线程
+  const prepaymentMap = new Map();
+  safeLoan.prepayments.forEach(item => {
+    prepaymentMap.set(item.period, item);
+  });
   
   const details = [];
   let remainingPrincipal = amount; // 剩余本金
@@ -621,7 +883,7 @@ function calculateSingleLoan(loan) {
   if (amount <= 0 || term <= 0) return [];
 
   // 1. 等额本息计算法
-  if (loan.method === 'ACPI') {
+  if (safeLoan.method === 'ACPI') {
     let monthlyRepayment = 0;
     if (monthlyRate === 0) {
       // 零利率特殊边界处理
@@ -649,9 +911,9 @@ function calculateSingleLoan(loan) {
       let payment = principal + interest;
 
       // 处理多笔提前还款：在第 i 期正常扣款结束后，一次性额外多还一大笔本金
-      const prepayItem = (loan.prepayments || []).find(p => parseInt(p.period) === i);
-      if (prepayItem && parseFloat(prepayItem.amount) > 0 && !isLastPeriod) {
-        const prepayAmount = parseFloat(prepayItem.amount);
+      const prepayItem = prepaymentMap.get(i);
+      if (prepayItem && prepayItem.amount > 0 && !isLastPeriod) {
+        const prepayAmount = prepayItem.amount;
         // 提前还款本金不能超过扣除当月本金后的剩余本金余额
         extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
         principal += extraPrepay;
@@ -661,7 +923,7 @@ function calculateSingleLoan(loan) {
       remainingPrincipal -= principal;
 
       // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的月供金额
-      if (prepayItem && parseFloat(prepayItem.amount) > 0 && (prepayItem.method || 'shrink') === 'reduce' && !isLastPeriod) {
+      if (prepayItem && prepayItem.amount > 0 && prepayItem.method === 'reduce' && !isLastPeriod) {
         const nRemain = term - i;
         if (nRemain > 0 && remainingPrincipal > 0) {
           if (monthlyRate === 0) {
@@ -674,7 +936,7 @@ function calculateSingleLoan(loan) {
       }
 
       // 计算该期的自然年月 (O(1) 数学直算法)
-      const dateInfo = getMonthYearOffset(loan.startYear, loan.startMonth, i - 1);
+      const dateInfo = getMonthYearOffset(safeLoan.startYear, safeLoan.startMonth, i - 1);
 
       details.push({
         period: i,
@@ -694,7 +956,7 @@ function calculateSingleLoan(loan) {
     }
   } 
   // 2. 等额本金计算法
-  else if (loan.method === 'ACP') {
+  else if (safeLoan.method === 'ACP') {
     let constantPrincipal = amount / term; // 每月应还本金固定不变（变更为 let 以便重算）
 
     for (let i = 1; i <= term; i++) {
@@ -715,9 +977,9 @@ function calculateSingleLoan(loan) {
       let payment = principal + interest;
 
       // 处理多次提前还款
-      const prepayItem = (loan.prepayments || []).find(p => parseInt(p.period) === i);
-      if (prepayItem && parseFloat(prepayItem.amount) > 0 && !isLastPeriod) {
-        const prepayAmount = parseFloat(prepayItem.amount);
+      const prepayItem = prepaymentMap.get(i);
+      if (prepayItem && prepayItem.amount > 0 && !isLastPeriod) {
+        const prepayAmount = prepayItem.amount;
         extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
         principal += extraPrepay;
         payment += extraPrepay;
@@ -726,14 +988,14 @@ function calculateSingleLoan(loan) {
       remainingPrincipal -= principal;
 
       // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的本金偿还额
-      if (prepayItem && parseFloat(prepayItem.amount) > 0 && (prepayItem.method || 'shrink') === 'reduce' && !isLastPeriod) {
+      if (prepayItem && prepayItem.amount > 0 && prepayItem.method === 'reduce' && !isLastPeriod) {
         const nRemain = term - i;
         if (nRemain > 0 && remainingPrincipal > 0) {
           constantPrincipal = remainingPrincipal / nRemain;
         }
       }
 
-      const dateInfo = getMonthYearOffset(loan.startYear, loan.startMonth, i - 1);
+      const dateInfo = getMonthYearOffset(safeLoan.startYear, safeLoan.startMonth, i - 1);
 
       details.push({
         period: i,
@@ -772,10 +1034,20 @@ function calculateAll() {
 
   // 1. 唯一一次执行：计算每笔贷款的独立月度还款明细并记录下来，全局共享此结果
   const loanSchedules = loans.map(loan => {
+    const schedule = calculateSingleLoan(loan);
+    const scheduleByMonth = new Map();
+    schedule.forEach(row => {
+      scheduleByMonth.set(row.dateStr, row);
+    });
+
     return {
       loanId: loan.id,
       loanName: loan.name,
-      schedule: calculateSingleLoan(loan)
+      originalAmount: clampNumber(loan.amount, 0, MAX_LOAN_AMOUNT, 0),
+      schedule,
+      scheduleByMonth,
+      firstMonth: schedule.length > 0 ? schedule[0].dateStr : null,
+      lastMonth: schedule.length > 0 ? schedule[schedule.length - 1].dateStr : null
     };
   });
 
@@ -803,11 +1075,11 @@ function calculateAll() {
     let monthlyInterest = 0;
     let monthlyRemainingSum = 0;
     const activeLoanNames = [];
-    const breakdown = {}; // 记录当月每笔贷款各自贡献了多少月供，给图表使用
+    const breakdown = Object.create(null); // 记录当月每笔贷款各自贡献了多少月供，给图表使用
 
     loanSchedules.forEach(item => {
       // 查找这笔贷款是否有在当月还款的期次
-      const matchingRow = item.schedule.find(row => row.dateStr === dateStr);
+      const matchingRow = item.scheduleByMonth.get(dateStr);
       if (matchingRow) {
         monthlyPayment += matchingRow.payment;
         monthlyPrincipal += matchingRow.principal;
@@ -825,13 +1097,11 @@ function calculateAll() {
       } else {
         breakdown[item.loanId] = 0;
         breakdown[item.loanId + '_prepay'] = 0;
-        // 如果这笔贷款还没开始，或者已经还完，查找它在当月之前的最后一期剩余本金，或者如果还没开始就是总额
-        const isStarted = item.schedule.some(row => row.dateStr < dateStr);
-        if (isStarted) {
+        // 通过首末月份直接判断贷款状态，避免每个自然月都重复扫描整张还款表。
+        if (item.lastMonth && dateStr > item.lastMonth) {
           monthlyRemainingSum += 0; // 已还清，剩余本金为 0
         } else {
-          const lObj = loans.find(l => l.id === item.loanId);
-          monthlyRemainingSum += lObj ? (parseFloat(lObj.amount) || 0) : 0; // 还没开始，本金还是总额
+          monthlyRemainingSum += item.originalAmount || 0; // 还没开始，本金还是总额
         }
       }
     });
@@ -857,7 +1127,7 @@ function calculateAll() {
 
   // 4. 计算全局的本金和利息累加（【彻底消除重复计算】，直接复用已有的利息明细结果）
   loans.forEach(loan => {
-    totalSumPrincipal += parseFloat(loan.amount) || 0;
+    totalSumPrincipal += clampNumber(loan.amount, 0, MAX_LOAN_AMOUNT, 0);
   });
   
   loanSchedules.forEach(item => {
@@ -909,7 +1179,7 @@ function calculateAll() {
 function getAnnualAggregatedData(monthlyData) {
   if (!monthlyData || monthlyData.length === 0) return [];
   
-  const annualMap = {};
+  const annualMap = Object.create(null);
 
   monthlyData.forEach(row => {
     // 截取年份（前 4 位，例如 '2026'）
@@ -923,7 +1193,7 @@ function getAnnualAggregatedData(monthlyData) {
         interest: 0,
         remaining: 0, // 年度剩余本金（以该年最末一月的剩余本金为准）
         activeLoans: new Set(),
-        breakdown: {}
+        breakdown: Object.create(null)
       };
     }
 
@@ -1093,7 +1363,7 @@ const prepaymentMarkerPlugin = {
           ctx.fillText('P', x, cy);
           ctx.restore();
         } else {
-          // Windows 98 经典 / 深色主题：经典的复古红色感叹号警告三角形
+          // Windows 98 经典：经典的复古红色感叹号警告三角形
           ctx.save();
           
           if (isLineChart) {
@@ -1145,19 +1415,38 @@ const prepaymentMarkerPlugin = {
 function renderTrendChart(months, aggregatedData) {
   const chartCanvas = document.getElementById('monthlyTrendChart');
   if (!chartCanvas) return;
+  const fallbackEl = document.getElementById('chartFallback');
   const ctx = chartCanvas.getContext('2d');
   
   if (trendChart) {
     trendChart.destroy(); // 销毁老图表实例，防止重叠闪烁
+    trendChart = null;
   }
 
+  if (fallbackEl) {
+    fallbackEl.style.display = 'none';
+    fallbackEl.innerText = '';
+  }
+  chartCanvas.style.display = 'block';
+
   if (loans.length === 0 || months.length === 0) return;
+
+  if (typeof Chart !== 'function') {
+    chartCanvas.style.display = 'none';
+    if (fallbackEl) {
+      fallbackEl.style.display = 'flex';
+      fallbackEl.innerText = currentLang === 'zh'
+        ? 'Chart.js 图表模块未加载。还款表格与 CSV 导出仍可正常使用。'
+        : 'Chart.js module is unavailable. Tables and CSV export remain available.';
+    }
+    return;
+  }
 
   // 根据当前激活的全局主题动态适配图表配色与字体
   const currentTheme = getGlobalTheme();
   
-  // 判断是否自适应升级为折线面积图：仅在“按月视图”且数据点个数大于 60 时触发
-  const isAreaChart = months.length > 60 && currentChartViewMode === 'monthly';
+  // 长周期月度数据使用细线图，避免柱体挤成一整块色墙，保留 Win98 系统监视器的硬边读数感。
+  const isLineChart = months.length > 60 && currentChartViewMode === 'monthly';
 
   let textColor = '#000000';
   let gridColor = '#808080';
@@ -1183,12 +1472,12 @@ function renderTrendChart(months, aggregatedData) {
     tooltipText = '#1d2530';
     fontName = '"Segoe UI", "Microsoft YaHei", -apple-system, sans-serif';
     retroColors = [
-      { fill: 'rgba(30, 82, 142, 0.75)', border: 'rgba(30, 82, 142, 0.9)' }, // Vista Aero 蓝
-      { fill: 'rgba(38, 124, 139, 0.75)', border: 'rgba(38, 124, 139, 0.9)' }, // Vista 青绿
-      { fill: 'rgba(140, 42, 78, 0.75)', border: 'rgba(140, 42, 78, 0.9)' }, // Vista 玫瑰红
-      { fill: 'rgba(216, 112, 147, 0.75)', border: 'rgba(216, 112, 147, 0.9)' }, // 浅蔷薇红
-      { fill: 'rgba(100, 149, 237, 0.75)', border: 'rgba(100, 149, 237, 0.9)' }, // 矢车菊蓝
-      { fill: 'rgba(46, 139, 87, 0.75)', border: 'rgba(46, 139, 87, 0.9)' } // 海洋绿
+      { fill: 'rgba(78, 128, 174, 0.28)', border: 'rgba(30, 82, 142, 0.9)' }, // Vista Aero 蓝
+      { fill: 'rgba(86, 150, 150, 0.26)', border: 'rgba(38, 124, 139, 0.9)' }, // Vista 青绿
+      { fill: 'rgba(120, 150, 190, 0.24)', border: 'rgba(80, 112, 158, 0.9)' }, // Vista 灰蓝
+      { fill: 'rgba(110, 140, 120, 0.24)', border: 'rgba(70, 110, 85, 0.9)' }, // Vista 灰绿
+      { fill: 'rgba(130, 135, 155, 0.22)', border: 'rgba(90, 95, 120, 0.9)' }, // Vista 钢灰
+      { fill: 'rgba(95, 145, 175, 0.22)', border: 'rgba(55, 105, 135, 0.9)' } // Vista 冷青
     ];
   }
 
@@ -1204,16 +1493,6 @@ function renderTrendChart(months, aggregatedData) {
     let fillBg = color.fill;
     let borderCol = color.border;
 
-    // 自适应调整折线面积图下的填充与描边，提升多主题下的玻璃通透质感与暗色护眼发光感
-    if (isAreaChart) {
-      if (currentTheme === 'vista') {
-        // Vista 面积图：降为 0.35 透明度，形成晶莹剔透的毛玻璃极光叠色
-        if (fillBg.startsWith('rgba')) {
-          fillBg = fillBg.replace('0.75', '0.35');
-        }
-      }
-    }
-
     const ds = {
       label: loan.name,
       loanId: loan.id, // 额外保存 loanId，以便 tooltip 能精准匹配其 prepay 值
@@ -1223,14 +1502,15 @@ function renderTrendChart(months, aggregatedData) {
       stack: 'combinedStack' // 启动堆叠模式
     };
 
-    if (isAreaChart) {
-      // 启用折线面积图专属配置
+    if (isLineChart) {
+      // 启用细线图配置：不填充面积，避免长周期数据变成一整块色墙。
       ds.type = 'line';
-      ds.fill = true;
-      ds.pointRadius = 0; // 默认隐藏折点，防止画面拥挤
-      ds.pointHoverRadius = 5; // hover 时高亮显示，保障交互精确度
-      ds.tension = 0.2; // 柔和微弧度，增加物化流畅度
-      ds.borderWidth = currentTheme === 'vista' ? 2.0 : 1.5;
+      ds.fill = false;
+      ds.pointRadius = 0;
+      ds.pointHoverRadius = currentTheme === 'vista' ? 4 : 3;
+      ds.tension = currentTheme === 'vista' ? 0.12 : 0;
+      ds.borderWidth = currentTheme === 'vista' ? 2 : 1;
+      ds.pointStyle = 'rect';
     } else {
       // 柱状堆叠图专属配置
       ds.type = 'bar';
@@ -1243,8 +1523,9 @@ function renderTrendChart(months, aggregatedData) {
   });
 
   // 创建符合当前 system 皮肤质感的像素/现代图表配置
-  trendChart = new Chart(ctx, {
-    type: isAreaChart ? 'line' : 'bar', // 自适应图表类别
+  try {
+    trendChart = new Chart(ctx, {
+    type: isLineChart ? 'line' : 'bar', // 自适应图表类别
     data: {
       labels: months,
       datasets: datasets
@@ -1257,7 +1538,7 @@ function renderTrendChart(months, aggregatedData) {
         mode: 'index',
         intersect: false
       },
-      animation: currentTheme === 'vista' ? { duration: 400 } : false, // Vista 启用 Aero 动态过渡，Win98 保持极速响应
+      animation: currentTheme === 'vista' ? { duration: 220 } : false, // Vista 保留短动画，Win98 保持极速响应
       plugins: {
         legend: {
           position: 'top',
@@ -1285,7 +1566,7 @@ function renderTrendChart(months, aggregatedData) {
               const dateRow = aggregatedData[context.dataIndex];
               const prepayVal = (dateRow && dateRow.breakdown) ? (dateRow.breakdown[loanId + '_prepay'] || 0) : 0;
               
-              let labelText = ` ${context.dataset.label}: ${formatNumber(rawVal)} ${currentLang === 'zh' ? '元' : '¥'}`;
+              let labelText = ` ${context.dataset.label}: ${formatNumber(rawVal)} ${getCurrencyUnit()}`;
               if (prepayVal > 0) {
                 // 如果当月有提前还款，在 Tooltip 中增加贴心标注
                 if (currentLang === 'zh') {
@@ -1335,15 +1616,25 @@ function renderTrendChart(months, aggregatedData) {
             font: { family: fontName, size: 10 },
             color: textColor,
             callback: function(value) {
-              return formatNumber(value) + (currentLang === 'zh' ? '元' : '¥');
+              return formatNumber(value) + getCurrencyUnit();
             }
           }
         }
       }
     },
     // 注册自定义提前还款指示器插件
-    plugins: [prepaymentMarkerPlugin]
-  });
+      plugins: [prepaymentMarkerPlugin]
+    });
+  } catch (e) {
+    chartCanvas.style.display = 'none';
+    trendChart = null;
+    if (fallbackEl) {
+      fallbackEl.style.display = 'flex';
+      fallbackEl.innerText = currentLang === 'zh'
+        ? '图表渲染失败。请检查浏览器环境，表格数据不受影响。'
+        : 'Chart rendering failed. The repayment table is still available.';
+    }
+  }
 }
 
 /**
@@ -1381,8 +1672,8 @@ function renderTreeView() {
   const sumNode = document.createElement('div');
   sumNode.className = `win-tree-item ${currentSelectedId === 'summary' ? 'selected' : ''}`;
   sumNode.innerHTML = `
-    <span class="win-tree-item-icon">📊</span>
-    <span>${currentLang === 'zh' ? '贷款组合汇总.sys' : 'Loan_Portfolio.sys'}</span>
+    <span class="win-tree-item-icon win-icon-chart"></span>
+    <span>${getSummaryTreeLabel()}</span>
   `;
   sumNode.onclick = () => selectTreeNode('summary');
   container.appendChild(sumNode);
@@ -1392,7 +1683,7 @@ function renderTreeView() {
     const loanNode = document.createElement('div');
     loanNode.className = `win-tree-item ${currentSelectedId === loan.id ? 'selected' : ''}`;
     loanNode.innerHTML = `
-      <span class="win-tree-item-icon">📄</span>
+      <span class="win-tree-item-icon win-icon-file"></span>
       <span>${escapeHTML(loan.name)}.cfg</span>
     `;
     loanNode.onclick = () => selectTreeNode(loan.id);
@@ -1410,13 +1701,13 @@ function renderTreeView() {
     addNode.style.opacity = '0.6';
     addNode.style.cursor = 'not-allowed';
     addNode.innerHTML = `
-      <span class="win-tree-item-icon">❌</span>
-      <span class="win-tree-add-disabled">${currentLang === 'zh' ? '新增贷款... (已达20笔上限)' : 'Add Loan... (Max 20 Reached)'}</span>
+      <span class="win-tree-item-icon win-icon-disabled"></span>
+      <span class="win-tree-add-disabled">${getAddLoanTreeLabel(true)}</span>
     `;
   } else {
     addNode.innerHTML = `
-      <span class="win-tree-item-icon">➕</span>
-      <span class="win-tree-add-btn">${currentLang === 'zh' ? '新增贷款.lnk' : 'Add_Loan.lnk'}</span>
+      <span class="win-tree-item-icon win-icon-plus"></span>
+      <span class="win-tree-add-btn">${getAddLoanTreeLabel(false)}</span>
     `;
   }
   addNode.onclick = createNewLoan;
@@ -1441,7 +1732,7 @@ function selectTreeNode(id) {
     panelSummary.style.display = 'flex';
     panelDetail.style.display = 'none';
     if (windowTitle) windowTitle.innerText = t('windowTitle');
-    if (taskbarTitle) taskbarTitle.innerText = '📁 ' + (currentLang === 'zh' ? '贷款组合管理器.cfg' : 'Loan Portfolio.cfg');
+    if (taskbarTitle) taskbarTitle.innerHTML = `<span class="win-icon-folder"></span>${escapeHTML(getPortfolioFileName())}`;
     calculateAll(); // 全局重算并画图
   } else {
     panelSummary.style.display = 'none';
@@ -1449,8 +1740,8 @@ function selectTreeNode(id) {
     
     const curLoan = loans.find(l => l.id === id);
     if (curLoan) {
-      if (windowTitle) windowTitle.innerText = `${currentLang === 'zh' ? '属性' : 'Properties'} - ${curLoan.name}.cfg`;
-      if (taskbarTitle) taskbarTitle.innerText = `📄 ${currentLang === 'zh' ? '属性' : 'Props'}: ${curLoan.name}.cfg`;
+      if (windowTitle) windowTitle.innerText = `${getPropertyLabel()} - ${curLoan.name}.cfg`;
+      if (taskbarTitle) taskbarTitle.innerHTML = `<span class="win-icon-file"></span>${escapeHTML(`${getPropertyTaskLabel()}: ${curLoan.name}.cfg`)}`;
       updateSingleLoanUI(curLoan);
     }
   }
@@ -1489,6 +1780,8 @@ function switchDetailTab(tabName) {
  * 同步单笔贷款的数据到表单 DOM，应用千分位金融格式化
  */
 function updateSingleLoanUI(loan) {
+  const safeLoan = sanitizeLoan(loan, loans.findIndex(item => item.id === loan.id));
+  Object.assign(loan, safeLoan);
   document.getElementById('loanName').value = loan.name;
   document.getElementById('loanAmount').value = loan.amount || '';
   document.getElementById('loanRate').value = loan.rate || '';
@@ -1501,7 +1794,7 @@ function updateSingleLoanUI(loan) {
   if (summaryTextEl) {
     const prepayments = loan.prepayments || [];
     if (prepayments.length > 0) {
-      const totalPrepaySum = prepayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+      const totalPrepaySum = prepayments.reduce((sum, p) => sum + (toFiniteNumber(p.amount, 0) || 0), 0);
       summaryTextEl.innerText = t('lblPrepaySummary', {
         count: prepayments.length,
         sum: formatNumber(totalPrepaySum)
@@ -1564,7 +1857,7 @@ function renderSingleRepayTable(loan) {
       prepayTag = t('prepayLabel', { amount: formatNumber(row.prepay) });
     }
 
-    const periodStr = currentLang === 'zh' ? `第 ${row.period} 期` : `P. ${row.period}`;
+    const periodStr = getPeriodLabel(row.period);
 
     tr.innerHTML = `
       <td><strong>${periodStr}</strong></td>
@@ -1589,22 +1882,23 @@ function handleParamChange() {
 
   // 抓取 DOM 中的最新数值，同步更新至内存状态
   const newName = document.getElementById('loanName').value.trim();
-  loan.name = newName !== '' ? newName : t('unnamedLoan');
+  loan.name = sanitizeLoanName(newName, t('unnamedLoan'));
 
-  const amountVal = parseFloat(document.getElementById('loanAmount').value);
-  loan.amount = !isNaN(amountVal) && amountVal > 0 ? amountVal : 0;
+  const amountVal = document.getElementById('loanAmount').value;
+  loan.amount = clampNumber(amountVal, 0, MAX_LOAN_AMOUNT, 0);
 
-  const rateVal = parseFloat(document.getElementById('loanRate').value);
-  loan.rate = !isNaN(rateVal) && rateVal >= 0 ? rateVal : 0;
+  const rateVal = document.getElementById('loanRate').value;
+  loan.rate = clampNumber(rateVal, 0, MAX_RATE_PERCENT, 0);
 
-  const termVal = parseInt(document.getElementById('loanTerm').value);
-  loan.term = !isNaN(termVal) && termVal > 0 ? termVal : 0;
+  const termVal = document.getElementById('loanTerm').value;
+  loan.term = clampInteger(termVal, 0, MAX_LOAN_TERM_MONTHS, 0);
 
-  const yearVal = parseInt(document.getElementById('loanStartYear').value);
-  loan.startYear = !isNaN(yearVal) ? yearVal : new Date().getFullYear();
+  const yearVal = document.getElementById('loanStartYear').value;
+  loan.startYear = clampInteger(yearVal, MIN_START_YEAR, MAX_START_YEAR, new Date().getFullYear());
 
-  const monthVal = parseInt(document.getElementById('loanStartMonth').value);
-  loan.startMonth = !isNaN(monthVal) && monthVal >= 1 && monthVal <= 12 ? monthVal : 1;
+  const monthVal = document.getElementById('loanStartMonth').value;
+  loan.startMonth = clampInteger(monthVal, 1, 12, 1);
+  loan.prepayments = sanitizePrepayments(loan.prepayments, loan.term);
 
   // 移去单笔提前还款的直接监听，多次提前还款现由管理器弹窗统一控制配置
 
@@ -1657,12 +1951,12 @@ function setQuickTerm(months) {
   if (!loan) return;
 
   // 1. 改写内存中的状态
-  loan.term = parseInt(months);
+  loan.term = clampInteger(months, 1, MAX_LOAN_TERM_MONTHS, 1);
 
   // 2. 同步更新输入框的值
   const termInput = document.getElementById('loanTerm');
   if (termInput) {
-    termInput.value = months;
+    termInput.value = loan.term;
   }
 
   // 3. 执行重算与 UI 刷新
@@ -1704,7 +1998,7 @@ function setQuickName(type) {
  */
 function createNewLoan() {
   // 防御性控制：最大支持 20 笔贷款配置，保障本地浏览器性能稳定
-  if (loans.length >= 20) {
+  if (loans.length >= MAX_LOANS) {
     alert(t('alertLimit'));
     return;
   }
@@ -1728,12 +2022,10 @@ function createNewLoan() {
     term: 240,       // 默认期限
     startYear: new Date().getFullYear(),
     startMonth: new Date().getMonth() + 1,
-    prepayPeriod: '',
-    prepayAmount: '',
-    prepayMethod: 'shrink' // 默认处理方式为缩短期限
+    prepayments: []  // 默认无提前还款计划，直接使用新版数据模型
   };
 
-  loans.push(newLoan);
+  loans.push(sanitizeLoan(newLoan, loans.length));
   saveData();
 
   // 切换选中到这笔新建的贷款上
@@ -1759,7 +2051,7 @@ function deleteCurrentLoan() {
     loans.splice(loanIndex, 1);
     // 如果删除后没有贷款，则自动初始化为默认贷款，避免界面空白
     if (loans.length === 0) {
-      loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+      loans = sanitizeLoans(cloneDefaultLoans());
     }
     saveData();
 
@@ -1777,7 +2069,7 @@ function deleteCurrentLoan() {
 function clearAllData() {
   if (confirm(t('confirmClear'))) {
     // 清空数据时，重置为一笔默认初始贷款，让系统拥有良好的出厂初始化状态
-    loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+    loans = sanitizeLoans(cloneDefaultLoans());
     saveData();
     currentSelectedId = 'summary';
     renderTreeView();
@@ -1798,9 +2090,7 @@ function exportSummaryCSV() {
   if (loans.length === 0 || globalMonthlyAggregated.length === 0) return;
   
   // 1. 根据当前语言自适应表头
-  const headers = currentLang === 'zh' 
-    ? ['还款年月', '月供总额(元)', '本金总额(元)', '利息总额(元)', '剩余本金(元)', '活跃贷款']
-    : ['Repay Month', 'Total Payment', 'Total Principal', 'Total Interest', 'Remaining Principal', 'Active Loans'];
+  const headers = getSummaryCSVHeaders();
     
   let csvContent = '\ufeff'; // 写入 UTF-8 BOM 头，彻底防止 Excel 乱码
   csvContent += headers.join(',') + '\r\n';
@@ -1808,12 +2098,12 @@ function exportSummaryCSV() {
   // 2. 写入数据
   globalMonthlyAggregated.forEach(row => {
     const csvRow = [
-      row.dateStr,
-      row.payment.toFixed(2),
-      row.principal.toFixed(2),
-      row.interest.toFixed(2),
-      row.remaining.toFixed(2),
-      `"${row.activeLoans.replace(/"/g, '""')}"` // 加双引号防止逗号截断
+      escapeCSVCell(row.dateStr),
+      escapeCSVCell(row.payment.toFixed(2)),
+      escapeCSVCell(row.principal.toFixed(2)),
+      escapeCSVCell(row.interest.toFixed(2)),
+      escapeCSVCell(row.remaining.toFixed(2)),
+      escapeCSVCell(row.activeLoans)
     ];
     csvContent += csvRow.join(',') + '\r\n';
   });
@@ -1847,22 +2137,20 @@ function exportSingleCSV() {
   if (schedule.length === 0) return;
 
   // 自适应多语言表头
-  const headers = currentLang === 'zh'
-    ? ['期数', '还款年月', '当月月供(元)', '偿还本金(元)', '偿还利息(元)', '剩余本金(元)', '其中提前还款(元)']
-    : ['Period', 'Repay Month', 'Payment Portion', 'Principal Portion', 'Interest Portion', 'Remaining Principal', 'Prepayment'];
+  const headers = getSingleCSVHeaders();
 
   let csvContent = '\ufeff'; // BOM 头防乱码
   csvContent += headers.join(',') + '\r\n';
 
   schedule.forEach(row => {
     const csvRow = [
-      currentLang === 'zh' ? `第 ${row.period} 期` : `Period ${row.period}`,
-      row.dateStr,
-      row.payment.toFixed(2),
-      row.principal.toFixed(2),
-      row.interest.toFixed(2),
-      row.remaining.toFixed(2),
-      row.prepay.toFixed(2)
+      escapeCSVCell(getPeriodLabel(row.period)),
+      escapeCSVCell(row.dateStr),
+      escapeCSVCell(row.payment.toFixed(2)),
+      escapeCSVCell(row.principal.toFixed(2)),
+      escapeCSVCell(row.interest.toFixed(2)),
+      escapeCSVCell(row.remaining.toFixed(2)),
+      escapeCSVCell(row.prepay.toFixed(2))
     ];
     csvContent += csvRow.join(',') + '\r\n';
   });
@@ -1872,7 +2160,7 @@ function exportSingleCSV() {
   const link = document.createElement('a');
   link.href = url;
   
-  const fileName = `${loan.name}_${currentLang === 'zh' ? '还款明细计划表' : 'Repayment_Plan'}.csv`;
+  const fileName = `${sanitizeFileName(loan.name, 'loan')}_${getSingleCSVFileSuffix()}.csv`;
   link.setAttribute('download', fileName);
   document.body.appendChild(link);
   link.click();
@@ -1886,7 +2174,8 @@ function exportSingleCSV() {
 
 // 保存数据至 LocalStorage
 function saveData() {
-  localStorage.setItem('WIN98_LOANS_DATA', JSON.stringify(loans));
+  loans = sanitizeLoans(loans);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(loans));
 }
 
 // 任务栏小时钟动态走时
@@ -1978,9 +2267,10 @@ function renderPrepayManagerList() {
   const tbody = document.getElementById('prepayManagerTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
+  tempPrepayments = sanitizePrepayments(tempPrepayments, currentSelectedId === 'summary' ? MAX_LOAN_TERM_MONTHS : (loans.find(l => l.id === currentSelectedId)?.term || MAX_LOAN_TERM_MONTHS));
 
   // 保证排序准确
-  tempPrepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+  tempPrepayments.sort((a, b) => a.period - b.period);
 
   if (tempPrepayments.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#808080; padding:15px;">${t('lblNoPrepay')}</td></tr>`;
@@ -1989,19 +2279,38 @@ function renderPrepayManagerList() {
 
   tempPrepayments.forEach((item, index) => {
     const tr = document.createElement('tr');
-    const periodText = currentLang === 'zh' || currentLang === 'zh-HK'
-      ? `第 ${item.period} 期`
-      : `Period ${item.period}`;
+    const periodText = getPeriodLabel(item.period);
     const methodText = item.method === 'shrink' ? t('prepayShrink') : t('prepayReduce');
 
-    tr.innerHTML = `
-      <td>${periodText}</td>
-      <td style="font-weight:bold; color:#000080;">${formatNumber(item.amount)}</td>
-      <td>${methodText}</td>
-      <td style="text-align:center;">
-        <a href="javascript:;" onclick="removeTempPrepay(${index})" style="color:#ff0000; text-decoration:underline;">${t('linkRemove')}</a>
-      </td>
-    `;
+    const periodTd = document.createElement('td');
+    periodTd.textContent = periodText;
+
+    const amountTd = document.createElement('td');
+    amountTd.style.fontWeight = 'bold';
+    amountTd.style.color = '#000080';
+    amountTd.textContent = formatNumber(item.amount);
+
+    const methodTd = document.createElement('td');
+    methodTd.textContent = methodText;
+
+    const actionTd = document.createElement('td');
+    actionTd.style.textAlign = 'center';
+    const removeLink = document.createElement('a');
+    // 使用普通锚点并阻止默认跳转，避免留下脚本伪协议入口。
+    removeLink.href = '#';
+    removeLink.style.color = '#ff0000';
+    removeLink.style.textDecoration = 'underline';
+    removeLink.textContent = t('linkRemove');
+    removeLink.onclick = function(event) {
+      event.preventDefault();
+      removeTempPrepay(index);
+    };
+    actionTd.appendChild(removeLink);
+
+    tr.appendChild(periodTd);
+    tr.appendChild(amountTd);
+    tr.appendChild(methodTd);
+    tr.appendChild(actionTd);
     tbody.appendChild(tr);
   });
 }
@@ -2014,8 +2323,8 @@ function addTempPrepay() {
   const loan = loans.find(l => l.id === currentSelectedId);
   if (!loan) return;
 
-  const periodVal = parseInt(document.getElementById('dialogPrepayPeriod').value);
-  const amountVal = parseFloat(document.getElementById('dialogPrepayAmount').value);
+  const periodVal = clampInteger(document.getElementById('dialogPrepayPeriod').value, 0, MAX_LOAN_TERM_MONTHS, 0);
+  const amountVal = clampNumber(document.getElementById('dialogPrepayAmount').value, 0, MAX_LOAN_AMOUNT, 0);
   
   let methodVal = 'shrink';
   const radios = document.getElementsByName('dialogPrepayMethod');
@@ -2027,25 +2336,25 @@ function addTempPrepay() {
   }
 
   // 参数边界合法性校验
-  if (isNaN(periodVal) || periodVal <= 0) {
+  if (periodVal <= 0) {
     alert(t('msgInvalidPeriod'));
     return;
   }
   
   // 期限范围校验，不能超过贷款总期限
-  const loanTerm = parseInt(loan.term) || 0;
+  const loanTerm = clampInteger(loan.term, 0, MAX_LOAN_TERM_MONTHS, 0);
   if (periodVal >= loanTerm) {
     alert(currentLang === 'zh' ? `⚠️ 警告：还款期数必须小于当前贷款的总期限 (${loanTerm}期)` : `⚠️ Warning: Repayment period must be less than the loan term (${loanTerm})`);
     return;
   }
 
-  if (isNaN(amountVal) || amountVal <= 0.01) {
+  if (amountVal <= 0.01) {
     alert(t('msgInvalidAmount'));
     return;
   }
 
   // 重复期数拦截校验
-  const isDuplicate = tempPrepayments.some(p => parseInt(p.period) === periodVal);
+  const isDuplicate = tempPrepayments.some(p => p.period === periodVal);
   if (isDuplicate) {
     alert(t('msgDuplicatePeriod'));
     return;
@@ -2081,8 +2390,7 @@ function confirmPrepaySelection() {
   if (!loan) return;
 
   // 正式持久化写入当前内存模型中
-  loan.prepayments = JSON.parse(JSON.stringify(tempPrepayments));
-  loan.prepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+  loan.prepayments = sanitizePrepayments(tempPrepayments, loan.term);
 
   showPrepayManager(false);
   
@@ -2139,20 +2447,20 @@ function showDisplayProperties(show) {
 
 // 获取当前的全局主题，默认为 'standard'，并向下兼容深色偏好至 standard
 function getGlobalTheme() {
-  const savedTheme = localStorage.getItem('WIN_THEME_PREF');
+  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
   if (savedTheme === 'dark') {
-    localStorage.setItem('WIN_THEME_PREF', 'standard');
-    localStorage.removeItem('WIN98_DARK_THEME');
+    localStorage.setItem(THEME_PREF_KEY, 'standard');
+    localStorage.removeItem(LEGACY_DARK_THEME_KEY);
     return 'standard';
   }
   if (savedTheme === 'vista' || savedTheme === 'standard') {
     return savedTheme;
   }
   // 向后兼容旧版本的深色模式配置
-  const oldDark = localStorage.getItem('WIN98_DARK_THEME');
+  const oldDark = localStorage.getItem(LEGACY_DARK_THEME_KEY);
   if (oldDark === 'true') {
-    localStorage.setItem('WIN_THEME_PREF', 'standard');
-    localStorage.removeItem('WIN98_DARK_THEME');
+    localStorage.setItem(THEME_PREF_KEY, 'standard');
+    localStorage.removeItem(LEGACY_DARK_THEME_KEY);
     return 'standard';
   }
   return 'standard';
@@ -2195,8 +2503,8 @@ function applyThemeSelection() {
   document.body.classList.add(`theme-${targetTheme}`);
   
   // 3. 将最新主题偏好保存至浏览器 LocalStorage
-  localStorage.setItem('WIN_THEME_PREF', targetTheme);
-  localStorage.removeItem('WIN98_DARK_THEME');
+  localStorage.setItem(THEME_PREF_KEY, targetTheme);
+  localStorage.removeItem(LEGACY_DARK_THEME_KEY);
   
   // 4. 触发零延迟重算并重绘 Chart.js 图表
   calculateAll();
@@ -2228,7 +2536,7 @@ function confirmLangSelection() {
   currentLang = targetLang;
   
   // 2. 将新的语言偏好写入浏览器 LocalStorage 缓存
-  localStorage.setItem('WIN98_LANG', targetLang);
+  localStorage.setItem(LANG_PREF_KEY, targetLang);
   
   // 3. 应用全新的语言包翻译
   applyTranslations();
@@ -2263,7 +2571,7 @@ document.addEventListener('focusout', function(e) {
 // ==========================================
 function initApp() {
   // 加载语言偏好
-  const savedLang = localStorage.getItem('WIN98_LANG');
+  const savedLang = localStorage.getItem(LANG_PREF_KEY);
   if (savedLang === 'zh' || savedLang === 'zh-HK' || savedLang === 'en' || savedLang === 'ja') {
     currentLang = savedLang;
   } else {
@@ -2282,50 +2590,30 @@ function initApp() {
   document.body.classList.add(`theme-${currentTheme}`);
 
   // 加载缓存数据
-  const savedData = localStorage.getItem('WIN98_LOANS_DATA');
+  const savedData = localStorage.getItem(STORAGE_KEY);
+  let shouldPersistSanitizedData = false;
   if (savedData) {
     try {
-      loans = JSON.parse(savedData);
+      loans = sanitizeLoans(JSON.parse(savedData));
+      shouldPersistSanitizedData = true;
     } catch (e) {
-      loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+      loans = sanitizeLoans(cloneDefaultLoans());
+      shouldPersistSanitizedData = true;
     }
   } else {
-    loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+    loans = sanitizeLoans(cloneDefaultLoans());
+    shouldPersistSanitizedData = true;
   }
 
   // 如果加载出的贷款列表为空（例如之前清空过），则自动初始化为默认贷款，确保系统不留白
   if (loans.length === 0) {
-    loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
-    saveData();
+    loans = sanitizeLoans(cloneDefaultLoans());
+    shouldPersistSanitizedData = true;
   }
 
-  // 确保已存在的数据项拥有提前还款参数 (向下兼容多笔提前还款)
-  loans.forEach(loan => {
-    if (!loan.prepayments) {
-      loan.prepayments = [];
-    }
-    // 如果有旧版本的单笔提前还款数据，自动迁移至新版 prepayments 数组中
-    const oldPeriod = parseInt(loan.prepayPeriod);
-    const oldAmount = parseFloat(loan.prepayAmount);
-    if (!isNaN(oldPeriod) && oldPeriod > 0 && !isNaN(oldAmount) && oldAmount > 0) {
-      // 避免重复迁移
-      const exists = loan.prepayments.some(p => parseInt(p.period) === oldPeriod);
-      if (!exists) {
-        loan.prepayments.push({
-          period: oldPeriod,
-          amount: oldAmount,
-          method: loan.prepayMethod || 'shrink'
-        });
-      }
-    }
-    
-    // 清除已弃用的老字段，避免存储冗余，并对提前还款按期数排序以确保计算流顺序
-    delete loan.prepayPeriod;
-    delete loan.prepayAmount;
-    delete loan.prepayMethod;
-    
-    loan.prepayments.sort((a, b) => parseInt(a.period) - parseInt(b.period));
-  });
+  if (shouldPersistSanitizedData) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(loans));
+  }
 
   // 1. 全局应用语言包
   applyTranslations();

@@ -6,7 +6,7 @@
   <meta name="description" content="基于 Windows 98 经典复古 UI 的通用多笔贷款合并管理器。支持零延迟实时反应式计算、多笔债务时间线对齐合流与堆叠月供趋势监视。">
   <title>我的电脑 - 贷款组合管理器.exe</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -16,7 +16,7 @@
     <div class="win98-window win-outset" id="mainWindow">
       
       <div class="win-titlebar">
-        <div class="win-titlebar-icon">📁</div>
+        <div class="win-titlebar-icon win-icon-folder"></div>
         <div class="win-titlebar-title" id="windowTitle" data-i18n="windowTitle">我的电脑 - 贷款组合管理器.exe</div>
         <div class="win-titlebar-controls">
           <button class="win-titlebar-btn" title="最小化">_</button>
@@ -72,6 +72,7 @@
                 </select>
               </div>
               <div style="flex: 1; position: relative; min-height: 0;">
+                <div id="chartFallback" class="win-chart-fallback" style="display: none;"></div>
                 <canvas id="monthlyTrendChart"></canvas>
               </div>
             </div>
@@ -80,7 +81,7 @@
               <span class="win-group-box-title" data-i18n="mergedTableTitle">合并月度还款计划总表</span>
               <div style="display: flex; justify-content: flex-end; margin-bottom: 4px;">
                 <button class="win-btn" onclick="exportSummaryCSV()" style="font-size:11px;">
-                  💾 <span data-i18n="btnExportCSV">导出 CSV</span>
+                  <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
                 </button>
               </div>
               <div class="win-table-container" style="flex:1;">
@@ -188,7 +189,7 @@
                       <div class="win-field-row" style="align-items: center; gap: 10px; flex-wrap: wrap;">
                         <span id="prepaySummaryText" data-i18n="lblNoPrepay">暂无提前还款配置</span>
                         <button class="win-btn" onclick="showPrepayManager(true)" style="padding: 4px 10px;">
-                          📅 <span data-i18n="btnManagePrepay">管理提前还款配置(M)...</span>
+                          <span class="win-icon-calendar"></span><span data-i18n="btnManagePrepay">管理提前还款配置(M)...</span>
                         </button>
                       </div>
                     </div>
@@ -216,10 +217,10 @@
                   <!-- 操作栏 -->
                   <div class="win-action-bar">
                     <button class="win-btn" onclick="exportSingleCSV()" style="font-size:11px;">
-                      💾 <span data-i18n="btnExportCSV">导出 CSV</span>
+                      <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
                     </button>
                     <button class="win-btn" onclick="deleteCurrentLoan()" style="color: #ff0000; font-weight: bold;">
-                      🗑️ <span data-i18n="btnDelete">销毁本笔贷款.lnk</span>
+                      <span class="win-icon-delete"></span><span data-i18n="btnDelete">销毁本笔贷款.lnk</span>
                     </button>
                   </div>
 
@@ -229,7 +230,7 @@
                 <div class="win-tab-pane" id="tabDetailPlan">
                   <div style="display: flex; justify-content: flex-end; margin-bottom: 4px;">
                     <button class="win-btn" onclick="exportSingleCSV()" style="font-size:11px;">
-                      💾 <span data-i18n="btnExportCSV">导出 CSV</span>
+                      <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
                     </button>
                   </div>
                   <div class="win-table-container">
@@ -268,7 +269,7 @@
       </button>
       <div class="win-task-items">
         <button class="win-btn win-task-btn active" id="taskbarTitle" onclick="minimizeOrRestoreMainWindow()">
-          📁 贷款组合管理器
+          <span class="win-icon-folder"></span>贷款组合管理器
         </button>
       </div>
       <div class="win-systray">
@@ -281,24 +282,24 @@
       <div class="win-start-menu-sidebar">Windows 98</div>
       <div class="win-start-menu-content">
         <div class="win-start-menu-item" onclick="createNewLoan(); toggleStartMenu();">
-          ➕ <span data-i18n="menuNewLoan">新增贷款文件(.lnk)</span>
+          <span class="win-menu-icon win-icon-plus"></span><span data-i18n="menuNewLoan">新增贷款文件(.lnk)</span>
         </div>
         <div class="win-start-menu-item" onclick="clearAllData(); toggleStartMenu();">
-          🗑️ <span data-i18n="menuClearAll">清空所有数据(.sys)</span>
+          <span class="win-menu-icon win-icon-delete"></span><span data-i18n="menuClearAll">清空所有数据(.sys)</span>
         </div>
         <div class="win-start-menu-divider"></div>
         <div class="win-start-menu-item" onclick="showDisplayProperties(true); toggleStartMenu();">
-          🖥️ <span data-i18n="menuTheme">显示属性(D)...</span>
+          <span class="win-menu-icon win-icon-display"></span><span data-i18n="menuTheme">显示属性(D)...</span>
         </div>
         <div class="win-start-menu-item" onclick="showLangProperties(true); toggleStartMenu();">
-          🌐 <span data-i18n="menuLang">区域和语言设置(L)...</span>
+          <span class="win-menu-icon win-icon-globe"></span><span data-i18n="menuLang">区域和语言设置(L)...</span>
         </div>
         <div class="win-start-menu-divider"></div>
         <div class="win-start-menu-item" onclick="visitGitHub(); toggleStartMenu();">
-          🔗 <span data-i18n="menuGitHub">访问 GitHub 仓库</span>
+          <span class="win-menu-icon win-icon-link"></span><span data-i18n="menuGitHub">访问 GitHub 仓库</span>
         </div>
         <div class="win-start-menu-item" onclick="showAboutDialog(); toggleStartMenu();">
-          ❓ <span data-i18n="menuAbout">关于本软件...</span>
+          <span class="win-menu-icon win-icon-help"></span><span data-i18n="menuAbout">关于本软件...</span>
         </div>
       </div>
     </div>
@@ -313,11 +314,11 @@
           </div>
         </div>
         <div class="win-dialog-body">
-          <div class="win-dialog-icon">💾</div>
+          <div class="win-dialog-icon win-icon-save"></div>
           <div class="win-dialog-message">
             <strong>Multi-Loan Manager 98</strong><br>
             <span data-i18n="aboutVersion">版本号：v2.2.1</span><br><br>
-            <span data-i18n="aboutDesc">通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、深色主题与多语言切换。</span><br><br>
+            <span data-i18n="aboutDesc">通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、显示属性与多语言切换。</span><br><br>
             <span data-i18n="aboutCopy">著作权所有 (C) 1998 - 2026.</span>
           </div>
         </div>
@@ -348,7 +349,7 @@
               <div class="win-preview-desktop">
                 <div class="win-preview-window win-outset">
                   <div class="win-preview-titlebar">
-                    <span class="win-preview-titlebar-icon">📁</span>
+                    <span class="win-preview-titlebar-icon win-icon-folder"></span>
                     <span class="win-preview-titlebar-title">Active Window</span>
                     <span class="win-preview-titlebar-btn">✖</span>
                   </div>
@@ -469,7 +470,7 @@
                   </label>
                 </div>
                 <button class="win-btn" onclick="addTempPrepay()" style="padding: 3px 12px; min-width: 80px;">
-                  ➕ <span data-i18n="btnAddToList">添加到列表(A)</span>
+                  <span class="win-icon-plus"></span><span data-i18n="btnAddToList">添加到列表(A)</span>
                 </button>
               </div>
             </div>

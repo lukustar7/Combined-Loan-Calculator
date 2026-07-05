@@ -1,63 +1,33 @@
-# 📁 Windows 贷款组合管理器 (Multi-Loan 98)
+# Windows 贷款组合管理器
 
-[最新版本: v2.2.1](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md) | [许可证: MIT](https://opensource.org/licenses/MIT)
+版本: 2.2.1
 
-> 运行于浏览器的纯静态、怀旧风多笔贷款合并计算器。支持 Windows 98 经典与 Windows Vista Aero 双重皮肤。
+纯静态单页面贷款组合计算器。支持多笔贷款合并、提前还款模拟、CSV 导出、多语言切换、Windows 经典与 Windows Vista 双主题。
 
----
+## 运行方式
 
-## 🚀 快速开始
-
-本项目为纯静态单页面应用，无任何第三方运行环境依赖。
+本项目无需构建步骤。图表库已固定在 `vendor/chart.umd.min.js`，运行时不依赖 CDN。
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/lukustar7/Combined-Loan-Calculator.git
-
-# 2. 根目录下启动简易服务（推荐）
 python3 -m http.server 8000
 ```
-然后在浏览器中访问 `http://localhost:8000` 即可直接运行。
 
----
+浏览器访问 `http://localhost:8000/`。
 
-## ✨ 核心亮点
+## 文件结构
 
-1. **零延迟实时重算**：全站输入框监听，数据变更毫秒级自动重算与趋势图表重绘制。
-2. **时间轴对齐合流**：支持最大装载 20 笔贷款配置，自适应对齐首次还款年月并合并生成总账表。
-3. **多次提前还款模拟**：支持在贷款期内任意多次、不定期配置提前还款计划。单独提供“缩短期限”与“减少月供”两种处理方式，多次还款支持级联重新分摊，并配备经典的弹窗管理器。
-4. **双重怀旧皮肤**：一键切换 Windows 98 经典浮雕与 Windows Vista Aero 半透明毛玻璃外观，Chart.js 配色智能联动。
-5. **地道多语言热切**：简体中文、繁体中文、英文、日文四语一键秒切，CSV 导出特制 UTF-8 BOM 杜绝 Excel 乱码。
+- `index.html`: 页面结构、弹窗、控制面板与入口脚本引用。
+- `styles.css`: Windows 经典与 Vista 主题样式。
+- `app.js`: 计算引擎、数据清洗、国际化、CSV 导出与图表渲染。
+- `vendor/chart.umd.min.js`: 本地固定版本 Chart.js 运行文件。
+- `CHANGELOG.md`: 版本变更记录。
 
----
+## 数据与兼容
 
-## 🛠️ 开发者速查（二次开发）
+用户数据保存于浏览器 `localStorage`。启动时会清洗旧缓存、异常数值和旧版提前还款字段，无法恢复的数据会回退为默认贷款。
 
-### 1. 项目文件结构
-* [index.html](file:///Users/luku/Combined-Loan-Calculator/index.html) - DOM 结构、“显示属性”与“区域语言设置”控制面板。
-* [styles.css](file:///Users/luku/Combined-Loan-Calculator/styles.css) - 复古系统皮肤 CSS 变量定义、Aero 高光渐变及响应式自适应布局。
-* [app.js](file:///Users/luku/Combined-Loan-Calculator/app.js) - 计算引擎、多语言词包（`I18N_DICTS`）、合并映射机制与 Chart.js 皮肤联动逻辑。
+旧版深色主题缓存会自动迁移为 Windows 经典主题。当前可选主题为 Windows 经典与 Windows Vista。
 
-### 2. 怎么加一门新语言？
-在 `app.js` 的 `I18N_DICTS` 中新增语言包，并在 `index.html` 的语言选择器中注册选项即可。HTML 元素声明 `data-i18n="Key"` 即可实现自动绑定翻译：
-```javascript
-// app.js 中的 I18N_DICTS 示例
-de: {
-  windowTitle: "Mein Computer - Darlehens-Manager.exe",
-  aboutVersion: "Version: v{version}",
-}
-```
+## 开源协议
 
-### 3. 怎么写一套新皮肤？
-在 `styles.css` 中根据 body 类名（如 `.theme-xp`）重写全局 CSS 变量（如 `--win-bg`），然后在 `index.html` 的显示属性下拉框中注册该选项。最后在 `app.js` 的 `updateChartTheme()` 中联动配置 Chart.js 配色。
-
-### 4. 底层架构特点
-* **单一版本源**：版本号在 `app.js` 头部以 `APP_VERSION` 全量定义，多语言自动动态填充变量。
-* **数据持久化**：用户沙盘配置自动同步至 `localStorage`，防空值拦截设计确保开箱即用。
-* **性能优化**：合并计算时采用内存一次性映射机制，年月偏移使用 $O(1)$ 纯数学直算，无 while 循环，杜绝卡死。
-
----
-
-## 📄 开源协议
-
-本项目基于 [MIT](https://opensource.org/licenses/MIT) 协议开源。详细变更历史请参阅 [CHANGELOG.md](file:///Users/luku/Combined-Loan-Calculator/CHANGELOG.md)。
+MIT。
