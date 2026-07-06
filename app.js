@@ -14,7 +14,7 @@
 // 1. 全局状态与多语言词典定义
 // ==========================================
 
-const APP_VERSION = "2.2.1"; // 系统统一版本号，作为版本信息的单一可信数据源
+const APP_VERSION = "2.2.2"; // 系统统一版本号，作为版本信息的单一可信数据源
 let loans = []; // 存储所有贷款的数组
 let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代表全局汇总，数字字符串代表单笔贷款 ID)
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
