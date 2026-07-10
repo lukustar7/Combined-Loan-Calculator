@@ -1165,6 +1165,40 @@ body {
     width: 72px;
     font-size: 12px;
   }
+
+  /*
+   * 详情表单在手机宽度下允许分行，避免快捷按钮把关键数字输入框压缩到只剩一个字符。
+   * 仅给需要完整展示的名称、期限和年月设置内容级最小宽度，其余字段继续弹性填满可用空间。
+   */
+  #tabDetailParams .win-field-row {
+    flex-wrap: wrap;
+  }
+
+  #loanName {
+    flex: 1 1 140px !important;
+    min-width: 120px;
+  }
+
+  .win-quick-names,
+  .win-quick-terms {
+    flex: 1 0 100%;
+    padding-left: 80px;
+  }
+
+  #loanTerm {
+    flex: 1 1 72px !important;
+    min-width: 72px;
+  }
+
+  #loanStartYear {
+    flex: 1 1 84px !important;
+    min-width: 84px;
+  }
+
+  #loanStartMonth {
+    flex: 1 1 56px !important;
+    min-width: 56px;
+  }
   
   .win-summary-grid {
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

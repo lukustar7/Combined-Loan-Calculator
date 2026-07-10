@@ -14,11 +14,25 @@ python3 -m http.server 8000
 
 浏览器访问 `http://localhost:8000/`。
 
+## 本地验证
+
+需要 Node.js 18 或更高版本，无需安装第三方依赖。
+
+```bash
+npm run check
+```
+
+该命令依次检查静态部署文件、JavaScript 语法和贷款计算测试。
+
 ## 文件结构
 
-- `index.html`: 页面结构、弹窗、控制面板与入口脚本引用。
-- `styles.css`: Windows 经典与 Vista 主题样式。
-- `app.js`: 计算引擎、数据清洗、国际化、CSV 导出与图表渲染。
+- `index.html`: 页面结构、弹窗、控制面板与模块入口。
+- `styles.css`: Windows 经典、Vista 主题与响应式样式。
+- `app.js`: 页面状态、国际化、浏览器存储、CSV 导出与图表渲染。
+- `src/loan-engine.js`: 数据清洗、单笔还款、组合汇总与年度汇总的纯计算核心。
+- `test/loan-engine.test.js`: 贷款公式、提前还款、异常数据与极限边界测试。
+- `scripts/validate-static-app.js`: 静态部署文件和本地脚本引用检查。
+- `package.json`: 无第三方依赖的构建与测试命令。
 - `vendor/chart.umd.min.js`: 本地固定版本 Chart.js 运行文件。
 - `CHANGELOG.md`: 版本变更记录。
 

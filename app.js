@@ -1,12 +1,29 @@
+import {
+  DEFAULT_LOAN,
+  MAX_LOANS,
+  MAX_LOAN_AMOUNT,
+  MAX_RATE_PERCENT,
+  MAX_LOAN_TERM_MONTHS,
+  MIN_START_YEAR,
+  MAX_START_YEAR,
+  aggregateLoanPortfolio,
+  calculateSingleLoan,
+  clampInteger,
+  clampNumber,
+  getAnnualAggregatedData,
+  sanitizeLoan as sanitizeLoanData,
+  sanitizeLoanName,
+  sanitizeLoans as sanitizeLoansData,
+  sanitizePrepayments,
+  toFiniteNumber
+} from './src/loan-engine.js';
+
 /**
  * ============================================================================
- * Windows 98 经典贷款组合管理器核心脚本 (Multi-Loan Manager 98 Core JS Engine)
+ * Windows 贷款组合管理器页面交互脚本
  * ============================================================================
- * 【Antigravity 顶尖重构版】：包含完整多语言国际化 (i18n)、提前还款模拟、
- * 快捷期限选择、千分位数字金融格式化、UTF-8 BOM 防乱码一键 CSV 导出、
- * 零延迟实时计算架构、O(1)年月直算以及双主题联动 Chart.js 重绘皮肤。
- * 
- * 遵守全局核心守则：写出的所有代码必须带有详尽的【中文注释】，解释核心逻辑在做什么。
+ * 负责国际化、DOM 交互、浏览器存储、CSV 导出和 Chart.js 渲染。
+ * 贷款清洗与数学计算统一由 src/loan-engine.js 提供，本文件不再维护重复公式。
  * ============================================================================
  */
 
@@ -433,34 +450,17 @@ const I18N_DICTS = {
     optViewMonthly: "月次明細",
     optViewAnnual: "年次集計"
   }
-};;
+};
 
-// 默认的初始数据（为保持通用性，示例命名为“贷款 1”）
+// 页面只复制核心模块的默认模板，避免默认金额、利率和期限在两个文件中分别维护。
 const DEFAULT_LOANS = [
-  {
-    id: 'loan_1',
-    name: '贷款 1',
-    amount: 1000000,   // 以“元”为单位，默认 100 万，支持零钱级精确输入
-    rate: 3.5,         // 年化利率 %
-    method: 'ACPI',    // ACPI: 等额本息, ACP: 等额本金
-    term: 360,         // 期限 (月)
-    startYear: 2026,   // 首次还款年份
-    startMonth: 6,     // 首次还款月份
-    prepayments: []    // 提前还款计划列表，格式：[{ period: 12, amount: 50000, method: 'shrink' }]
-  }
+  { ...DEFAULT_LOAN, prepayments: [] }
 ];
 
 const STORAGE_KEY = 'WIN98_LOANS_DATA'; // 浏览器本地缓存键名，集中定义避免散落字符串
 const THEME_PREF_KEY = 'WIN_THEME_PREF'; // 当前主题缓存键名
 const LEGACY_DARK_THEME_KEY = 'WIN98_DARK_THEME'; // 旧版深色主题缓存键名，用于兼容迁移
 const LANG_PREF_KEY = 'WIN98_LANG'; // 当前语言缓存键名
-const MAX_LOANS = 20; // 单机页面允许同时管理的贷款上限
-const MAX_LOAN_AMOUNT = 1000000000000; // 单笔贷款金额上限：1 万亿元，防止 Infinity/NaN 污染计算链
-const MAX_RATE_PERCENT = 100; // 年化利率上限：100%，足够覆盖极端测试，同时避免公式溢出
-const MAX_LOAN_TERM_MONTHS = 3600; // 最长期限：300 年，控制循环规模
-const MIN_START_YEAR = 1990; // 与 HTML 输入框保持一致的最小首还年份
-const MAX_START_YEAR = 2100; // 与 HTML 输入框保持一致的最大首还年份
-const MAX_LOAN_NAME_LENGTH = 80; // 贷款名称长度上限，防止超长文本撑爆树形目录与 CSV 文件名
 
 /**
  * 深拷贝默认贷款配置。
@@ -471,150 +471,62 @@ function cloneDefaultLoans() {
 }
 
 /**
- * 将外部输入转换为有限数字。
- * Number('1e309') 会得到 Infinity，这类值必须拦截，否则图表和表格会被 NaN/Infinity 传染。
+ * 安全读取浏览器本地存储。
+ * 隐私模式、存储策略或浏览器配额异常都可能让 localStorage 直接抛错，读取失败时按“没有缓存”处理。
  */
-function toFiniteNumber(value, fallback = 0) {
-  if (typeof value === 'string' && value.trim() === '') return fallback;
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : fallback;
-}
-
-/**
- * 将数字限制在指定区间。
- * 输入框的 min/max 只能限制正常手输，不能限制 LocalStorage、控制台或旧版本坏数据。
- */
-function clampNumber(value, min, max, fallback = min) {
-  const numericValue = toFiniteNumber(value, fallback);
-  return Math.min(max, Math.max(min, numericValue));
-}
-
-/**
- * 将整数限制在指定区间。
- * 期限、年份和月份都走整数通道，避免 12.8 个月、NaN 年这类脏值进入计算。
- */
-function clampInteger(value, min, max, fallback = min) {
-  const numericValue = Math.trunc(toFiniteNumber(value, fallback));
-  return Math.min(max, Math.max(min, numericValue));
-}
-
-/**
- * 清洗贷款名称。
- * 去掉不可见控制字符并限制长度，避免树节点、窗口标题和 CSV 文件名出现异常文本。
- */
-function sanitizeLoanName(value, fallback) {
-  const rawText = typeof value === 'string' ? value : '';
-  const cleanText = rawText.replace(/[\u0000-\u001f\u007f]/g, '').trim();
-  if (!cleanText) return fallback;
-  return cleanText.slice(0, MAX_LOAN_NAME_LENGTH);
-}
-
-/**
- * 清洗内部贷款 ID。
- * ID 会被用作对象键名，因此必须限制为普通字母、数字、下划线和连字符。
- */
-function sanitizeLoanId(value, fallback) {
-  const rawText = typeof value === 'string' ? value : '';
-  const cleanText = rawText.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48);
-  if (!cleanText || cleanText === '__proto__' || cleanText === 'constructor' || cleanText === 'prototype') {
-    return fallback;
+function readStorage(key) {
+  try {
+    return globalThis.localStorage.getItem(key);
+  } catch (error) {
+    return null;
   }
-  return cleanText;
 }
 
 /**
- * 清洗提前还款列表。
- * 多端协作和旧缓存都可能带入脏结构，因此这里统一校验期数、金额和处理方式。
+ * 安全写入浏览器本地存储。
+ * 写入失败不会阻断本次计算和界面交互，当前会话中的内存数据仍然保持可用。
  */
-function sanitizePrepayments(rawPrepayments, loanTerm = MAX_LOAN_TERM_MONTHS) {
-  if (!Array.isArray(rawPrepayments)) return [];
-  const seenPeriods = new Set();
-  const safeTerm = clampInteger(loanTerm, 0, MAX_LOAN_TERM_MONTHS, MAX_LOAN_TERM_MONTHS);
-  const sanitized = [];
-
-  rawPrepayments.forEach(item => {
-    if (!item || typeof item !== 'object') return;
-    const period = clampInteger(item.period, 1, MAX_LOAN_TERM_MONTHS, 0);
-    const amount = clampNumber(item.amount, 0, MAX_LOAN_AMOUNT, 0);
-    const method = item.method === 'reduce' ? 'reduce' : 'shrink';
-
-    // 提前还款期数必须落在贷款有效期内，且同一期只保留第一条，避免重复扣款。
-    if (period <= 0 || amount <= 0 || (safeTerm > 0 && period >= safeTerm) || seenPeriods.has(period)) {
-      return;
-    }
-    seenPeriods.add(period);
-    sanitized.push({ period, amount, method });
-  });
-
-  sanitized.sort((a, b) => a.period - b.period);
-  return sanitized;
+function writeStorage(key, value) {
+  try {
+    globalThis.localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 /**
- * 清洗单笔贷款对象。
- * 这是 LocalStorage 迁移和运行期兜底的统一入口，确保核心计算永远吃到结构完整的数据。
+ * 安全删除旧版缓存键，避免存储权限异常影响主题迁移。
+ */
+function removeStorage(key) {
+  try {
+    globalThis.localStorage.removeItem(key);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * 为纯计算模块注入页面当前语言下的默认贷款名。
+ * 核心模块不读取国际化状态，避免数学公式与页面环境互相绑死。
  */
 function sanitizeLoan(rawLoan, index = 0) {
-  const safeIndex = Math.max(0, index);
-  const fallbackLoan = DEFAULT_LOANS[0];
-  const source = rawLoan && typeof rawLoan === 'object' ? rawLoan : {};
-  const fallbackName = `${t('loanDefaultName')} ${safeIndex + 1}`;
-  const term = clampInteger(source.term, 0, MAX_LOAN_TERM_MONTHS, fallbackLoan.term);
-  let prepayments = sanitizePrepayments(source.prepayments, term);
-
-  // 向下兼容旧版单笔提前还款字段，迁移后只保留新版 prepayments 数组。
-  const oldPeriod = clampInteger(source.prepayPeriod, 1, MAX_LOAN_TERM_MONTHS, 0);
-  const oldAmount = clampNumber(source.prepayAmount, 0, MAX_LOAN_AMOUNT, 0);
-  if (oldPeriod > 0 && oldAmount > 0 && (term <= 0 || oldPeriod < term)) {
-    const exists = prepayments.some(item => item.period === oldPeriod);
-    if (!exists) {
-      prepayments.push({
-        period: oldPeriod,
-        amount: oldAmount,
-        method: source.prepayMethod === 'reduce' ? 'reduce' : 'shrink'
-      });
-      prepayments.sort((a, b) => a.period - b.period);
-    }
-  }
-
-  return {
-    id: sanitizeLoanId(source.id, `loan_${safeIndex + 1}`),
-    name: sanitizeLoanName(source.name, fallbackName),
-    amount: clampNumber(source.amount, 0, MAX_LOAN_AMOUNT, fallbackLoan.amount),
-    rate: clampNumber(source.rate, 0, MAX_RATE_PERCENT, fallbackLoan.rate),
-    method: source.method === 'ACP' ? 'ACP' : 'ACPI',
-    term,
-    startYear: clampInteger(source.startYear, MIN_START_YEAR, MAX_START_YEAR, fallbackLoan.startYear),
-    startMonth: clampInteger(source.startMonth, 1, 12, fallbackLoan.startMonth),
-    prepayments
-  };
+  return sanitizeLoanData(rawLoan, index, {
+    defaultLoan: DEFAULT_LOANS[0],
+    defaultNamePrefix: t('loanDefaultName')
+  });
 }
 
 /**
- * 清洗贷款数组并修复重复 ID。
- * 如果缓存结构不是数组，直接回退默认数据，避免启动阶段崩溃。
+ * 清洗贷款集合并修复重复 ID。
+ * 页面保留原有的“空数据恢复默认贷款”行为，具体边界规则由核心模块统一维护。
  */
 function sanitizeLoans(rawLoans) {
-  if (!Array.isArray(rawLoans)) {
-    return cloneDefaultLoans().map((loan, index) => sanitizeLoan(loan, index));
-  }
-
-  const usedIds = new Set();
-  const sanitizedLoans = rawLoans.slice(0, MAX_LOANS).map((loan, index) => {
-    const sanitized = sanitizeLoan(loan, index);
-    let baseId = sanitized.id || `loan_${index + 1}`;
-    let nextId = baseId;
-    let suffix = 2;
-    while (usedIds.has(nextId)) {
-      nextId = `${baseId}_${suffix}`;
-      suffix++;
-    }
-    usedIds.add(nextId);
-    sanitized.id = nextId;
-    return sanitized;
+  return sanitizeLoansData(rawLoans, {
+    defaultLoans: DEFAULT_LOANS,
+    defaultNamePrefix: t('loanDefaultName')
   });
-
-  return sanitizedLoans.length > 0 ? sanitizedLoans : cloneDefaultLoans().map((loan, index) => sanitizeLoan(loan, index));
 }
 
 /**
@@ -840,191 +752,12 @@ function getSingleCSVFileSuffix() {
 }
 
 // ==========================================
-// 3. 核心数学计算算法 (Loan Core Formulas)
+// 3. 贷款组合计算结果与页面渲染适配
 // ==========================================
 
 /**
- * 根据首还年月和月份偏移量计算目标的年和月
- * 【Antigravity 顶尖重构】：彻底消除 while 循环，升级为 O(1) 的纯数学整除与求余直算
- */
-function getMonthYearOffset(startYear, startMonth, offsetMonths) {
-  let year = clampInteger(startYear, MIN_START_YEAR, MAX_START_YEAR, DEFAULT_LOANS[0].startYear);
-  // 自然月转换为以 0 代表 1 月的基础偏移，再加上目标累加月数
-  let totalMonths = (clampInteger(startMonth, 1, 12, DEFAULT_LOANS[0].startMonth) - 1) + clampInteger(offsetMonths, 0, MAX_LOAN_TERM_MONTHS, 0);
-  
-  // 采用数学向下取整 Math.floor 计算年份增加的偏移量，完美包容正负的大数值区间
-  let offsetYears = Math.floor(totalMonths / 12);
-  let month = ((totalMonths % 12) + 12) % 12 + 1; // 确保求余后绝对落在 1 到 12 之间
-  year += offsetYears;
-  
-  return { year, month };
-}
-
-/**
- * 计算单笔贷款的按月还款明细
- * 【Antigravity 顶尖重构】：
- * 1. 深度适配提前还款模拟逻辑（支持“月供不变，期限缩短”经典提前结清算法）。
- * 2. 重写最后一期平账逻辑：利息单独按期初剩余本金直算，本金等于所有剩余本金，彻底解决负利息与浮点精度顽疾。
- */
-function calculateSingleLoan(loan) {
-  const safeLoan = sanitizeLoan(loan, 0);
-  const amount = safeLoan.amount; // 金额单位本即为“元”，无需再乘以一万
-  const annualRate = safeLoan.rate / 100; // 统一经过有限数字与区间清洗，避免 Infinity 进入公式
-  const monthlyRate = annualRate / 12; // 月利率
-  const term = safeLoan.term; // 限制期限上限最高300年(3600期)，防止海量循环卡死主线程
-  const prepaymentMap = new Map();
-  safeLoan.prepayments.forEach(item => {
-    prepaymentMap.set(item.period, item);
-  });
-  
-  const details = [];
-  let remainingPrincipal = amount; // 剩余本金
-
-  if (amount <= 0 || term <= 0) return [];
-
-  // 1. 等额本息计算法
-  if (safeLoan.method === 'ACPI') {
-    let monthlyRepayment = 0;
-    if (monthlyRate === 0) {
-      // 零利率特殊边界处理
-      monthlyRepayment = amount / term;
-    } else {
-      // 等额本息经典公式：A = P * [R * (1 + R)^N] / [(1 + R)^N - 1]
-      monthlyRepayment = amount * (monthlyRate * Math.pow(1 + monthlyRate, term)) / (Math.pow(1 + monthlyRate, term) - 1);
-    }
-
-    for (let i = 1; i <= term; i++) {
-      if (remainingPrincipal <= 0.01) break; // 剩余本金已归零，贷款提前结清，终止循环
-
-      let interest = remainingPrincipal * monthlyRate; // 当月利息 = 剩余本金 * 月利率
-      let principal = monthlyRepayment - interest;    // 当月本金 = 月供额 - 当月利息
-      let extraPrepay = 0;
-      let isLastPeriod = false;
-
-      // 最后一期数学平账修正，或本金剩余已经不够支撑当期还款本金
-      if (i === term || remainingPrincipal - principal <= 0.01) {
-        principal = remainingPrincipal;
-        interest = remainingPrincipal * monthlyRate; // 最后一期利息精确用期初剩余本金计算，防止产生负利息
-        isLastPeriod = true;
-      }
-      
-      let payment = principal + interest;
-
-      // 处理多笔提前还款：在第 i 期正常扣款结束后，一次性额外多还一大笔本金
-      const prepayItem = prepaymentMap.get(i);
-      if (prepayItem && prepayItem.amount > 0 && !isLastPeriod) {
-        const prepayAmount = prepayItem.amount;
-        // 提前还款本金不能超过扣除当月本金后的剩余本金余额
-        extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
-        principal += extraPrepay;
-        payment += extraPrepay;
-      }
-
-      remainingPrincipal -= principal;
-
-      // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的月供金额
-      if (prepayItem && prepayItem.amount > 0 && prepayItem.method === 'reduce' && !isLastPeriod) {
-        const nRemain = term - i;
-        if (nRemain > 0 && remainingPrincipal > 0) {
-          if (monthlyRate === 0) {
-            monthlyRepayment = remainingPrincipal / nRemain;
-          } else {
-            // 重新应用等额本息公式：A = P * [R * (1 + R)^N] / [(1 + R)^N - 1]
-            monthlyRepayment = remainingPrincipal * (monthlyRate * Math.pow(1 + monthlyRate, nRemain)) / (Math.pow(1 + monthlyRate, nRemain) - 1);
-          }
-        }
-      }
-
-      // 计算该期的自然年月 (O(1) 数学直算法)
-      const dateInfo = getMonthYearOffset(safeLoan.startYear, safeLoan.startMonth, i - 1);
-
-      details.push({
-        period: i,
-        year: dateInfo.year,
-        month: dateInfo.month,
-        dateStr: `${dateInfo.year}-${String(dateInfo.month).padStart(2, '0')}`,
-        payment: payment,
-        principal: principal,
-        interest: interest,
-        remaining: Math.max(0, remainingPrincipal),
-        prepay: extraPrepay // 存下本期提前还款额，便于 CSV 和页面展示
-      });
-
-      if (remainingPrincipal <= 0.01) {
-        break; // 剩余本金归零，彻底结清
-      }
-    }
-  } 
-  // 2. 等额本金计算法
-  else if (safeLoan.method === 'ACP') {
-    let constantPrincipal = amount / term; // 每月应还本金固定不变（变更为 let 以便重算）
-
-    for (let i = 1; i <= term; i++) {
-      if (remainingPrincipal <= 0.01) break;
-
-      let interest = remainingPrincipal * monthlyRate; // 当月利息 = 剩余本金 * 月利率
-      let principal = constantPrincipal;
-      let extraPrepay = 0;
-      let isLastPeriod = false;
-      
-      // 最后一期或接近结清时的精确平账
-      if (i === term || remainingPrincipal - principal <= 0.01) {
-        principal = remainingPrincipal;
-        interest = remainingPrincipal * monthlyRate; // 精确计息
-        isLastPeriod = true;
-      }
-
-      let payment = principal + interest;
-
-      // 处理多次提前还款
-      const prepayItem = prepaymentMap.get(i);
-      if (prepayItem && prepayItem.amount > 0 && !isLastPeriod) {
-        const prepayAmount = prepayItem.amount;
-        extraPrepay = Math.min(prepayAmount, remainingPrincipal - principal);
-        principal += extraPrepay;
-        payment += extraPrepay;
-      }
-
-      remainingPrincipal -= principal;
-
-      // 如果设置了“减少月供”，在提前还款当期（第 i 期）结束后，重新计算未来每期的本金偿还额
-      if (prepayItem && prepayItem.amount > 0 && prepayItem.method === 'reduce' && !isLastPeriod) {
-        const nRemain = term - i;
-        if (nRemain > 0 && remainingPrincipal > 0) {
-          constantPrincipal = remainingPrincipal / nRemain;
-        }
-      }
-
-      const dateInfo = getMonthYearOffset(safeLoan.startYear, safeLoan.startMonth, i - 1);
-
-      details.push({
-        period: i,
-        year: dateInfo.year,
-        month: dateInfo.month,
-        dateStr: `${dateInfo.year}-${String(dateInfo.month).padStart(2, '0')}`,
-        payment: payment,
-        principal: principal,
-        interest: interest,
-        remaining: Math.max(0, remainingPrincipal),
-        prepay: extraPrepay
-      });
-
-      if (remainingPrincipal <= 0.01) {
-        break; // 提前结清，终止计划表生成
-      }
-    }
-  }
-
-  return details;
-}
-
-// ==========================================
-// 4. 多笔时间线聚合合流算法 (Timeline Merger)
-// ==========================================
-
-/**
- * 全局合并计算：计算单笔，聚合到自然月时间轴，绘制图表，更新 UI
- * 【Antigravity 顶尖重构】：彻底消除对 calculateSingleLoan 的高昂重复调用，提升 50% CPU 算力性能！
+ * 调用纯计算核心生成组合结果，再把结果映射到页面。
+ * 此处不再维护任何贷款公式，确保生产页面和自动化测试使用同一套规则。
  */
 function calculateAll() {
   if (loans.length === 0) {
@@ -1032,202 +765,35 @@ function calculateAll() {
     return;
   }
 
-  // 1. 唯一一次执行：计算每笔贷款的独立月度还款明细并记录下来，全局共享此结果
-  const loanSchedules = loans.map(loan => {
-    const schedule = calculateSingleLoan(loan);
-    const scheduleByMonth = new Map();
-    schedule.forEach(row => {
-      scheduleByMonth.set(row.dateStr, row);
-    });
+  const portfolio = aggregateLoanPortfolio(loans);
+  globalMonthlyAggregated = portfolio.monthly;
 
-    return {
-      loanId: loan.id,
-      loanName: loan.name,
-      originalAmount: clampNumber(loan.amount, 0, MAX_LOAN_AMOUNT, 0),
-      schedule,
-      scheduleByMonth,
-      firstMonth: schedule.length > 0 ? schedule[0].dateStr : null,
-      lastMonth: schedule.length > 0 ? schedule[schedule.length - 1].dateStr : null
-    };
-  });
+  const unitText = t("unitYuan");
+  document.getElementById("sumPrincipal").innerText = `${formatNumber(portfolio.totalPrincipal)} ${unitText}`;
+  document.getElementById("sumInterest").innerText = `${formatNumber(portfolio.totalInterest)} ${unitText}`;
+  document.getElementById("sumTotal").innerText = `${formatNumber(portfolio.totalPayment)} ${unitText}`;
 
-  // 2. 收集所有还款计划中出现的全部自然月键值 (格式: YYYY-MM)
-  const allMonths = new Set();
-  loanSchedules.forEach(item => {
-    item.schedule.forEach(row => {
-      allMonths.add(row.dateStr);
-    });
-  });
-
-  // 将月份数组排序，形成一条连续的自然月时间线
-  const sortedMonths = Array.from(allMonths).sort();
-
-  // 3. 按月合并数据
-  const monthlyAggregated = [];
-  let totalSumPrincipal = 0;
-  let totalSumInterest = 0;
-  let peakPayment = 0;
-  let peakMonth = '-';
-
-  sortedMonths.forEach(dateStr => {
-    let monthlyPayment = 0;
-    let monthlyPrincipal = 0;
-    let monthlyInterest = 0;
-    let monthlyRemainingSum = 0;
-    const activeLoanNames = [];
-    const breakdown = Object.create(null); // 记录当月每笔贷款各自贡献了多少月供，给图表使用
-
-    loanSchedules.forEach(item => {
-      // 查找这笔贷款是否有在当月还款的期次
-      const matchingRow = item.scheduleByMonth.get(dateStr);
-      if (matchingRow) {
-        monthlyPayment += matchingRow.payment;
-        monthlyPrincipal += matchingRow.principal;
-        monthlyInterest += matchingRow.interest;
-        monthlyRemainingSum += matchingRow.remaining;
-        activeLoanNames.push(item.loanName);
-        
-        // 【优化图表趋势坐标轴】：为避免大额提前还款撑大 Y 轴导致月供趋势压扁看不清，
-        // 图表柱体高度仅计入当期“常规月供”（即减去当期提前还款额后的部分）
-        const regularPayment = matchingRow.payment - (matchingRow.prepay || 0);
-        breakdown[item.loanId] = regularPayment;
-        
-        // 另外记录提前还款额，以便在图表的交互提示（Tooltip）中进行特制化高保真展示
-        breakdown[item.loanId + '_prepay'] = matchingRow.prepay || 0;
-      } else {
-        breakdown[item.loanId] = 0;
-        breakdown[item.loanId + '_prepay'] = 0;
-        // 通过首末月份直接判断贷款状态，避免每个自然月都重复扫描整张还款表。
-        if (item.lastMonth && dateStr > item.lastMonth) {
-          monthlyRemainingSum += 0; // 已还清，剩余本金为 0
-        } else {
-          monthlyRemainingSum += item.originalAmount || 0; // 还没开始，本金还是总额
-        }
-      }
-    });
-
-    if (monthlyPayment > peakPayment) {
-      peakPayment = monthlyPayment;
-      peakMonth = dateStr;
-    }
-
-    monthlyAggregated.push({
-      dateStr,
-      payment: monthlyPayment,
-      principal: monthlyPrincipal,
-      interest: monthlyInterest,
-      remaining: monthlyRemainingSum,
-      activeLoans: activeLoanNames.join(', '),
-      breakdown
-    });
-  });
-
-  // 全局缓存合并计划，用于 CSV 一键下载
-  globalMonthlyAggregated = monthlyAggregated;
-
-  // 4. 计算全局的本金和利息累加（【彻底消除重复计算】，直接复用已有的利息明细结果）
-  loans.forEach(loan => {
-    totalSumPrincipal += clampNumber(loan.amount, 0, MAX_LOAN_AMOUNT, 0);
-  });
-  
-  loanSchedules.forEach(item => {
-    if (item.schedule.length > 0) {
-      const singleInterestSum = item.schedule.reduce((sum, row) => sum + row.interest, 0);
-      totalSumInterest += singleInterestSum; // 直接以“元”为单位进行高精度累加
-    }
-  });
-
-  // 5. 更新全局汇总面板的数据展示，引入千分位金融格式化
-  const unitText = t('unitYuan');
-  document.getElementById('sumPrincipal').innerText = `${formatNumber(totalSumPrincipal)} ${unitText}`;
-  document.getElementById('sumInterest').innerText = `${formatNumber(totalSumInterest)} ${unitText}`;
-  document.getElementById('sumTotal').innerText = `${formatNumber(totalSumPrincipal + totalSumInterest)} ${unitText}`;
-  
-  if (monthlyAggregated.length > 0) {
-    document.getElementById('sumFirstMonth').innerText = `${formatNumber(monthlyAggregated[0].payment)} ${getCurrencyUnit()}`;
-    document.getElementById('sumPeakMonth').innerText = `${peakMonth} (${formatNumber(peakPayment)}${getCurrencyUnit()})`;
+  if (portfolio.monthly.length > 0) {
+    document.getElementById("sumFirstMonth").innerText = `${formatNumber(portfolio.firstMonthPayment)} ${getCurrencyUnit()}`;
+    document.getElementById("sumPeakMonth").innerText = `${portfolio.peakMonth} (${formatNumber(portfolio.peakPayment)}${getCurrencyUnit()})`;
   } else {
-    document.getElementById('sumFirstMonth').innerText = `0.00 ${getCurrencyUnit()}`;
-    document.getElementById('sumPeakMonth').innerText = '-';
+    document.getElementById("sumFirstMonth").innerText = `0.00 ${getCurrencyUnit()}`;
+    document.getElementById("sumPeakMonth").innerText = "-";
   }
 
-  // 6. 渲染合并明细表格
-  renderSummaryTable(monthlyAggregated);
+  renderSummaryTable(portfolio.monthly);
 
-  // 7. 重新渲染 Chart.js 堆叠趋势图
-  if (currentChartViewMode === 'annual') {
-    const annualAggregated = getAnnualAggregatedData(monthlyAggregated);
-    const annualLabels = annualAggregated.map(row => row.dateStr);
-    renderTrendChart(annualLabels, annualAggregated);
+  if (currentChartViewMode === "annual") {
+    const annualAggregated = getAnnualAggregatedData(portfolio.monthly);
+    renderTrendChart(annualAggregated.map(row => row.dateStr), annualAggregated);
   } else {
-    renderTrendChart(sortedMonths, monthlyAggregated);
+    renderTrendChart(portfolio.months, portfolio.monthly);
   }
 
-  // 如果当前选中的是某笔具体的贷款，则同步更新这笔贷款对应的面板参数
-  if (currentSelectedId !== 'summary') {
-    const curLoan = loans.find(l => l.id === currentSelectedId);
-    if (curLoan) {
-      updateSingleLoanUI(curLoan);
-    }
+  if (currentSelectedId !== "summary") {
+    const currentLoan = loans.find(loan => loan.id === currentSelectedId);
+    if (currentLoan) updateSingleLoanUI(currentLoan);
   }
-}
-
-/**
- * 将月度合并还款计划数据聚合为年度汇总数据
- * 用于图表展示“按年视图”时的数据源
- */
-function getAnnualAggregatedData(monthlyData) {
-  if (!monthlyData || monthlyData.length === 0) return [];
-  
-  const annualMap = Object.create(null);
-
-  monthlyData.forEach(row => {
-    // 截取年份（前 4 位，例如 '2026'）
-    const yearStr = row.dateStr.slice(0, 4);
-    
-    if (!annualMap[yearStr]) {
-      annualMap[yearStr] = {
-        dateStr: yearStr,
-        payment: 0,
-        principal: 0,
-        interest: 0,
-        remaining: 0, // 年度剩余本金（以该年最末一月的剩余本金为准）
-        activeLoans: new Set(),
-        breakdown: Object.create(null)
-      };
-    }
-
-    const yearRow = annualMap[yearStr];
-    yearRow.payment += row.payment;
-    yearRow.principal += row.principal;
-    yearRow.interest += row.interest;
-    
-    // 覆盖写：因为数据是按月度升序排列 of 顺序遍历的，最后一次遍历到的 row.remaining 刚好是该年度最后一个月的剩余本金
-    yearRow.remaining = row.remaining;
-
-    // 收集当年所有活跃的贷款名称
-    if (row.activeLoans) {
-      row.activeLoans.split(', ').forEach(name => {
-        if (name) yearRow.activeLoans.add(name);
-      });
-    }
-
-    // 累加当年的 breakdown 数据
-    for (var k in row.breakdown) {
-      if (!yearRow.breakdown[k]) yearRow.breakdown[k] = 0;
-      yearRow.breakdown[k] += row.breakdown[k];
-    }
-  });
-
-  // 转化为数组并格式化 activeLoans
-  const result = Object.values(annualMap).map(yearRow => {
-    yearRow.activeLoans = Array.from(yearRow.activeLoans).join(', ');
-    return yearRow;
-  });
-
-  // 按年份升序排列
-  result.sort((a, b) => parseInt(a.dateStr) - parseInt(b.dateStr));
-  return result;
 }
 
 /**
@@ -1431,7 +997,8 @@ function renderTrendChart(months, aggregatedData) {
 
   if (loans.length === 0 || months.length === 0) return;
 
-  if (typeof Chart !== 'function') {
+  const ChartConstructor = globalThis.Chart;
+  if (typeof ChartConstructor !== 'function') {
     chartCanvas.style.display = 'none';
     if (fallbackEl) {
       fallbackEl.style.display = 'flex';
@@ -1524,7 +1091,7 @@ function renderTrendChart(months, aggregatedData) {
 
   // 创建符合当前 system 皮肤质感的像素/现代图表配置
   try {
-    trendChart = new Chart(ctx, {
+    trendChart = new ChartConstructor(ctx, {
     type: isLineChart ? 'line' : 'bar', // 自适应图表类别
     data: {
       labels: months,
@@ -1697,7 +1264,7 @@ function renderTreeView() {
   addNode.style.borderTop = '1px dotted var(--win-shadow)';
   addNode.style.paddingTop = '6px';
   
-  if (loans.length >= 20) {
+  if (loans.length >= MAX_LOANS) {
     addNode.style.opacity = '0.6';
     addNode.style.cursor = 'not-allowed';
     addNode.innerHTML = `
@@ -1783,11 +1350,11 @@ function updateSingleLoanUI(loan) {
   const safeLoan = sanitizeLoan(loan, loans.findIndex(item => item.id === loan.id));
   Object.assign(loan, safeLoan);
   document.getElementById('loanName').value = loan.name;
-  document.getElementById('loanAmount').value = loan.amount || '';
-  document.getElementById('loanRate').value = loan.rate || '';
-  document.getElementById('loanTerm').value = loan.term || '';
-  document.getElementById('loanStartYear').value = loan.startYear || '';
-  document.getElementById('loanStartMonth').value = loan.startMonth || '';
+  document.getElementById('loanAmount').value = loan.amount ?? '';
+  document.getElementById('loanRate').value = loan.rate ?? '';
+  document.getElementById('loanTerm').value = loan.term ?? '';
+  document.getElementById('loanStartYear').value = loan.startYear ?? '';
+  document.getElementById('loanStartMonth').value = loan.startMonth ?? '';
   
   // 渲染多次提前还款配置简报 (新增)
   const summaryTextEl = document.getElementById('prepaySummaryText');
@@ -1993,6 +1560,21 @@ function setQuickName(type) {
 // 8. 数据新建、删除与清空功能
 // ==========================================
 
+let loanIdSequence = 0;
+
+/**
+ * 生成当前贷款集合内唯一的 ID。
+ * 时间戳后追加会话内递增序号，并再次检查现有集合，可承受自动化连点或同一毫秒内的重复创建。
+ */
+function createUniqueLoanId() {
+  let candidate;
+  do {
+    loanIdSequence += 1;
+    candidate = `loan_${Date.now().toString(36)}_${loanIdSequence.toString(36)}`;
+  } while (loans.some(loan => loan.id === candidate));
+  return candidate;
+}
+
 /**
  * 动态“新增”贷款配置文件
  */
@@ -2012,7 +1594,7 @@ function createNewLoan() {
     newName = `${defNamePrefix} ${loans.length + count}`;
   }
 
-  const newId = `loan_${Date.now()}`;
+  const newId = createUniqueLoanId();
   const newLoan = {
     id: newId,
     name: newName,
@@ -2175,7 +1757,7 @@ function exportSingleCSV() {
 // 保存数据至 LocalStorage
 function saveData() {
   loans = sanitizeLoans(loans);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(loans));
+  writeStorage(STORAGE_KEY, JSON.stringify(loans));
 }
 
 // 任务栏小时钟动态走时
@@ -2447,20 +2029,20 @@ function showDisplayProperties(show) {
 
 // 获取当前的全局主题，默认为 'standard'，并向下兼容深色偏好至 standard
 function getGlobalTheme() {
-  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
+  const savedTheme = readStorage(THEME_PREF_KEY);
   if (savedTheme === 'dark') {
-    localStorage.setItem(THEME_PREF_KEY, 'standard');
-    localStorage.removeItem(LEGACY_DARK_THEME_KEY);
+    writeStorage(THEME_PREF_KEY, 'standard');
+    removeStorage(LEGACY_DARK_THEME_KEY);
     return 'standard';
   }
   if (savedTheme === 'vista' || savedTheme === 'standard') {
     return savedTheme;
   }
   // 向后兼容旧版本的深色模式配置
-  const oldDark = localStorage.getItem(LEGACY_DARK_THEME_KEY);
+  const oldDark = readStorage(LEGACY_DARK_THEME_KEY);
   if (oldDark === 'true') {
-    localStorage.setItem(THEME_PREF_KEY, 'standard');
-    localStorage.removeItem(LEGACY_DARK_THEME_KEY);
+    writeStorage(THEME_PREF_KEY, 'standard');
+    removeStorage(LEGACY_DARK_THEME_KEY);
     return 'standard';
   }
   return 'standard';
@@ -2503,8 +2085,8 @@ function applyThemeSelection() {
   document.body.classList.add(`theme-${targetTheme}`);
   
   // 3. 将最新主题偏好保存至浏览器 LocalStorage
-  localStorage.setItem(THEME_PREF_KEY, targetTheme);
-  localStorage.removeItem(LEGACY_DARK_THEME_KEY);
+  writeStorage(THEME_PREF_KEY, targetTheme);
+  removeStorage(LEGACY_DARK_THEME_KEY);
   
   // 4. 触发零延迟重算并重绘 Chart.js 图表
   calculateAll();
@@ -2536,7 +2118,7 @@ function confirmLangSelection() {
   currentLang = targetLang;
   
   // 2. 将新的语言偏好写入浏览器 LocalStorage 缓存
-  localStorage.setItem(LANG_PREF_KEY, targetLang);
+  writeStorage(LANG_PREF_KEY, targetLang);
   
   // 3. 应用全新的语言包翻译
   applyTranslations();
@@ -2571,7 +2153,7 @@ document.addEventListener('focusout', function(e) {
 // ==========================================
 function initApp() {
   // 加载语言偏好
-  const savedLang = localStorage.getItem(LANG_PREF_KEY);
+  const savedLang = readStorage(LANG_PREF_KEY);
   if (savedLang === 'zh' || savedLang === 'zh-HK' || savedLang === 'en' || savedLang === 'ja') {
     currentLang = savedLang;
   } else {
@@ -2590,7 +2172,7 @@ function initApp() {
   document.body.classList.add(`theme-${currentTheme}`);
 
   // 加载缓存数据
-  const savedData = localStorage.getItem(STORAGE_KEY);
+  const savedData = readStorage(STORAGE_KEY);
   let shouldPersistSanitizedData = false;
   if (savedData) {
     try {
@@ -2612,7 +2194,7 @@ function initApp() {
   }
 
   if (shouldPersistSanitizedData) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(loans));
+    writeStorage(STORAGE_KEY, JSON.stringify(loans));
   }
 
   // 1. 全局应用语言包
@@ -2628,5 +2210,36 @@ function initApp() {
   startClock();
 }
 
-// 绑定窗口加载事件，启动应用
-window.onload = initApp;
+/**
+ * index.html 仍保留复古桌面所需的内联事件属性。
+ * ES 模块默认不会把函数挂到 window，这里只公开 HTML 实际调用的交互入口，内部计算函数继续保持私有。
+ */
+Object.assign(globalThis, {
+  addTempPrepay,
+  applyThemeSelection,
+  clearAllData,
+  closeAboutDialog,
+  confirmLangSelection,
+  confirmPrepaySelection,
+  confirmThemeSelection,
+  createNewLoan,
+  deleteCurrentLoan,
+  exportSingleCSV,
+  exportSummaryCSV,
+  handleParamChange,
+  handlePreviewThemeChange,
+  minimizeOrRestoreMainWindow,
+  setQuickName,
+  setQuickTerm,
+  showAboutDialog,
+  showDisplayProperties,
+  showLangProperties,
+  showPrepayManager,
+  switchChartViewMode,
+  switchDetailTab,
+  toggleStartMenu,
+  visitGitHub
+});
+
+// 等待页面结构和本地图表库加载完成后再启动应用。
+window.addEventListener('load', initApp);
