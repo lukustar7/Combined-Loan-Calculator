@@ -150,11 +150,6 @@ function calculateAll() {
   } else {
     renderTrendChart(portfolio.months, portfolio.monthly);
   }
-
-  if (currentSelectedId !== "summary") {
-    const currentLoan = loans.find(loan => loan.id === currentSelectedId);
-    if (currentLoan) updateSingleLoanUI(currentLoan);
-  }
 }
 
 function switchChartViewMode() {
@@ -570,7 +565,7 @@ function selectTreeNode(id) {
 }
 
 // ==========================================
-// 4. 单笔贷款编辑与联动
+// 4. 单笔贷款编辑与全链路实时联动
 // ==========================================
 
 function switchDetailTab(tabName) {
@@ -595,6 +590,9 @@ function switchDetailTab(tabName) {
   }
 }
 
+/**
+ * 刷新单笔贷款的全部 UI 显示（输入框回填、大写提示、提前还款简报、省息卡片、单笔速览与明细表格）
+ */
 function updateSingleLoanUI(loan) {
   const safeLoan = sanitizeLoanData(loan, loans.findIndex(item => item.id === loan.id));
   Object.assign(loan, safeLoan);
@@ -609,7 +607,27 @@ function updateSingleLoanUI(loan) {
   // 更新大写与万元辅助胶囊
   updateAmountHelper(loan.amount);
 
-  // 更新提前还款配置简报
+  // 刷新提前还款配置简报与省息效益卡片
+  refreshPrepayUI(loan);
+
+  // 设置还款方式单选
+  const radios = document.getElementsByName('repayMethod');
+  radios.forEach(radio => {
+    radio.checked = radio.value === loan.method;
+  });
+
+  // 刷新单笔本息速览
+  refreshSingleSummaryUI(loan);
+
+  if (currentDetailTab === 'plan') {
+    renderSingleRepayTable(loan);
+  }
+}
+
+/**
+ * 实时刷新提前还款简报与省息效益卡片
+ */
+function refreshPrepayUI(loan) {
   const summaryTextEl = document.getElementById('prepaySummaryText');
   if (summaryTextEl) {
     const prepayments = loan.prepayments || [];
@@ -621,7 +639,6 @@ function updateSingleLoanUI(loan) {
     }
   }
 
-  // 刷新提前还款省息效益卡片
   const savings = calculatePrepaymentSavings(loan);
   const savedInterestEl = document.getElementById('savedInterestText');
   const savedMonthsEl = document.getElementById('savedMonthsText');
@@ -629,14 +646,12 @@ function updateSingleLoanUI(loan) {
     savedInterestEl.innerText = `${formatNumber(savings.savedInterest / 10000)} 万元`;
     savedMonthsEl.innerText = `${savings.savedMonths} 个月`;
   }
+}
 
-  // 设置还款方式
-  const radios = document.getElementsByName('repayMethod');
-  radios.forEach(radio => {
-    radio.checked = radio.value === loan.method;
-  });
-
-  // 单笔速览
+/**
+ * 实时刷新单笔速览指标
+ */
+function refreshSingleSummaryUI(loan) {
   const schedule = calculateSingleLoan(loan);
   if (schedule.length > 0) {
     const sumTotal = schedule.reduce((sum, r) => sum + r.payment, 0);
@@ -648,10 +663,6 @@ function updateSingleLoanUI(loan) {
     document.getElementById('detailSumTotal').innerText = `0.00 元`;
     document.getElementById('detailSumInterest').innerText = `0.00 元`;
     document.getElementById('detailFirstMonth').innerText = `0.00 元`;
-  }
-
-  if (currentDetailTab === 'plan') {
-    renderSingleRepayTable(loan);
   }
 }
 
@@ -699,6 +710,9 @@ function renderSingleRepayTable(loan) {
   });
 }
 
+/**
+ * 参数变更响应函数：确保单笔 UI、侧边栏、大盘数据与图表 100% 实时同步联动！
+ */
 function handleParamChange() {
   if (currentSelectedId === 'summary') return;
 
@@ -733,36 +747,23 @@ function handleParamChange() {
     }
   }
 
-  // 同步树形目录
-  renderTreeView();
+  // 1. 实时刷新单笔提前还款简报与省息效益卡片
+  refreshPrepayUI(loan);
 
-  // 刷新单笔指标与省息效益
-  const schedule = calculateSingleLoan(loan);
-  if (schedule.length > 0) {
-    const sumTotal = schedule.reduce((sum, r) => sum + r.payment, 0);
-    const sumInterest = schedule.reduce((sum, r) => sum + r.interest, 0);
-    document.getElementById('detailSumTotal').innerText = `${formatNumber(sumTotal)} 元`;
-    document.getElementById('detailSumInterest').innerText = `${formatNumber(sumInterest)} 元`;
-    document.getElementById('detailFirstMonth').innerText = `${formatNumber(schedule[0].payment)} 元`;
-  } else {
-    document.getElementById('detailSumTotal').innerText = `0.00 元`;
-    document.getElementById('detailSumInterest').innerText = `0.00 元`;
-    document.getElementById('detailFirstMonth').innerText = `0.00 元`;
-  }
+  // 2. 实时刷新单笔速览
+  refreshSingleSummaryUI(loan);
 
-  const savings = calculatePrepaymentSavings(loan);
-  const savedInterestEl = document.getElementById('savedInterestText');
-  const savedMonthsEl = document.getElementById('savedMonthsText');
-  if (savedInterestEl && savedMonthsEl) {
-    savedInterestEl.innerText = `${formatNumber(savings.savedInterest / 10000)} 万元`;
-    savedMonthsEl.innerText = `${savings.savedMonths} 个月`;
-  }
-
+  // 3. 实时刷新还款计划表（若当前在计划表 Tab）
   if (currentDetailTab === 'plan') {
     renderSingleRepayTable(loan);
   }
 
+  // 4. 同步侧边栏导航条目（名称与徽章）
+  renderTreeView();
+
+  // 5. 保存数据并触发全局大盘与图表重算
   saveData();
+  calculateAll();
 }
 
 function setQuickTerm(months) {
@@ -775,7 +776,6 @@ function setQuickTerm(months) {
   if (termInput) termInput.value = loan.term;
 
   handleParamChange();
-  calculateAll();
 }
 
 function setQuickName(name) {
@@ -788,7 +788,6 @@ function setQuickName(name) {
   if (nameInput) nameInput.value = name;
 
   handleParamChange();
-  calculateAll();
 }
 
 // ==========================================
@@ -1140,6 +1139,8 @@ function confirmPrepaySelection() {
 
   loan.prepayments = sanitizePrepayments(tempPrepayments, loan.term);
   showPrepayManager(false);
+  
+  // 触发全链路实时刷新（包含单笔提前还款简报、省息效益卡片、单笔速览、导航树及大盘总表与图表）
   handleParamChange();
 }
 
