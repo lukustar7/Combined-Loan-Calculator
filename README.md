@@ -23,7 +23,7 @@ python3 -m http.server 8000
 
 ## 自动化测试
 
-运行静态检查与 14 项贷款计算测试套件：
+运行静态检查与 18 项贷款计算测试套件：
 
 ```bash
 npm run check

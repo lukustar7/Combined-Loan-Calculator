@@ -492,21 +492,18 @@ export function numberToChineseUppercase(value) {
       }
     }
     result += '元';
+  } else {
+    result = '零元';
   }
 
   if (jiao === 0 && fen === 0) {
     result += '整';
-  } else {
-    if (jiao > 0) {
-      result += digits[jiao] + '角';
-    } else if (yuan > 0) {
-      result += '零';
-    }
-    if (fen > 0) {
-      result += digits[fen] + '分';
-    } else if (jiao > 0) {
-      result += '整';
-    }
+  } else if (jiao > 0 && fen === 0) {
+    result += digits[jiao] + '角整';
+  } else if (jiao > 0 && fen > 0) {
+    result += digits[jiao] + '角' + digits[fen] + '分';
+  } else if (jiao === 0 && fen > 0) {
+    result += '零' + digits[fen] + '分';
   }
 
   result = result
@@ -514,7 +511,8 @@ export function numberToChineseUppercase(value) {
     .replace(/零万/g, '万')
     .replace(/零亿/g, '亿')
     .replace(/亿万/g, '亿零')
-    .replace(/零元/, '元');
+    .replace(/零元零/g, '零元零')
+    .replace(/^零元零(?=[壹贰叁肆伍陆柒捌玖]分)/, '零元零');
 
   return result || '零元整';
 }

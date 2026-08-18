@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  DEFAULT_LOAN,
   DEFAULT_MORTGAGE_COMBO,
   MAX_LOANS,
   MAX_LOAN_AMOUNT,
@@ -10,11 +11,15 @@ import {
   aggregateLoanPortfolio,
   calculatePrepaymentSavings,
   calculateSingleLoan,
+  clampInteger,
+  clampNumber,
   getAnnualAggregatedData,
   getMonthYearOffset,
   numberToChineseUppercase,
   sanitizeLoan,
-  sanitizeLoans
+  sanitizeLoans,
+  sanitizePrepayments,
+  toFiniteNumber
 } from '../src/loan-engine.js';
 
 /**
@@ -146,6 +151,38 @@ test('提前还款的缩短期限和减少月供采用不同后续策略', () =>
   assertClose(reduce.reduce((sum, row) => sum + row.principal, 0), 100_000);
 });
 
+test('多笔错期多次提前还款混合策略在末期完全结清', () => {
+  const multiPrepayLoan = createLoan({
+    amount: 500_000,
+    rate: 4.2,
+    term: 120,
+    prepayments: [
+      { period: 12, amount: 50_000, method: 'shrink' },
+      { period: 24, amount: 80_000, method: 'reduce' },
+      { period: 36, amount: 60_000, method: 'shrink' }
+    ]
+  });
+
+  const schedule = calculateSingleLoan(multiPrepayLoan);
+  assert.ok(schedule.length < 120, '多次提前还本后应提前结清');
+  assertClose(schedule.reduce((sum, row) => sum + row.principal, 0), 500_000, 1e-4);
+  assert.equal(schedule.at(-1).remaining, 0);
+});
+
+test('超额提前还款在当期完全结清且不产生负数或多余期数', () => {
+  const overPrepayLoan = createLoan({
+    amount: 100_000,
+    rate: 5,
+    term: 36,
+    prepayments: [{ period: 3, amount: 500_000, method: 'shrink' }]
+  });
+
+  const schedule = calculateSingleLoan(overPrepayLoan);
+  assert.equal(schedule.length, 3, '第3期结清后不再产生第4期');
+  assertClose(schedule.reduce((sum, row) => sum + row.principal, 0), 100_000);
+  assert.equal(schedule.at(-1).remaining, 0);
+});
+
 test('提前还款省息效益计算准确评估节省利息与缩短月数', () => {
   const loanWithShrink = createLoan({
     amount: 1_000_000,
@@ -169,6 +206,11 @@ test('金额转中文大写算法精准转换各量级财务金额', () => {
   assert.equal(numberToChineseUppercase(1234567.89), '壹佰贰拾叁万肆仟伍佰陆拾柒元捌角玖分');
   assert.equal(numberToChineseUppercase(1000500.5), '壹佰万零伍佰元伍角整');
   assert.equal(numberToChineseUppercase(100000000), '壹亿元整');
+  assert.equal(numberToChineseUppercase(1000000000000), '壹万亿元整');
+  assert.equal(numberToChineseUppercase(0.05), '零元零伍分');
+  assert.equal(numberToChineseUppercase(0.5), '零元伍角整');
+  assert.equal(numberToChineseUppercase(10.05), '壹拾元零伍分');
+  assert.equal(numberToChineseUppercase(100.5), '壹佰元伍角整');
 });
 
 test('20色调色板与房贷组合出厂模板完备可用', () => {
@@ -187,6 +229,7 @@ test('组合汇总正确处理错峰贷款和尚未开始的本金', () => {
       amount: 1200,
       rate: 0,
       term: 12,
+      startYear: 2026,
       startMonth: 1
     }),
     createLoan({
@@ -195,6 +238,7 @@ test('组合汇总正确处理错峰贷款和尚未开始的本金', () => {
       amount: 600,
       rate: 0,
       term: 6,
+      startYear: 2026,
       startMonth: 3
     })
   ]);
@@ -211,6 +255,36 @@ test('组合汇总正确处理错峰贷款和尚未开始的本金', () => {
   assertClose(portfolio.totalInterest, 0);
 });
 
+test('跨多年大跨度错峰贷款聚合数据连续且精确', () => {
+  const portfolio = aggregateLoanPortfolio([
+    createLoan({
+      id: 'past_loan',
+      name: '早期车贷',
+      amount: 120_000,
+      rate: 0,
+      term: 12,
+      startYear: 2020,
+      startMonth: 1
+    }),
+    createLoan({
+      id: 'future_mortgage',
+      name: '未来房贷',
+      amount: 1_200_000,
+      rate: 0,
+      term: 12,
+      startYear: 2028,
+      startMonth: 1
+    })
+  ]);
+
+  assert.equal(portfolio.totalPrincipal, 1_320_000);
+  assert.equal(portfolio.months[0], '2020-01');
+  assert.equal(portfolio.months.at(-1), '2028-12');
+  assert.equal(portfolio.monthly.length, 24);
+  assertClose(portfolio.monthly[0].remaining, 1_310_000);
+  assert.equal(portfolio.monthly.at(-1).remaining, 0);
+});
+
 test('相同月供按分比较并保留最早峰值月份', () => {
   const portfolio = aggregateLoanPortfolio([createLoan({
     amount: 1_000_000,
@@ -224,18 +298,27 @@ test('相同月供按分比较并保留最早峰值月份', () => {
   assert.equal(portfolio.peakPayment, 4490.45);
 });
 
-test('年度汇总保留带逗号的完整贷款名称', () => {
-  const portfolio = aggregateLoanPortfolio([createLoan({
-    id: 'named',
-    name: '住房, 主贷',
-    amount: 1200,
-    rate: 0,
-    term: 12
-  })]);
+test('年度汇总保留带逗号的完整贷款名称并精准累加本息与余额', () => {
+  const portfolio = aggregateLoanPortfolio([
+    createLoan({
+      id: 'named',
+      name: '住房, 主贷',
+      amount: 1200,
+      rate: 0,
+      term: 24,
+      startYear: 2026,
+      startMonth: 1
+    })
+  ]);
   const annual = getAnnualAggregatedData(portfolio.monthly);
 
-  assert.equal(annual.length, 1);
-  assertClose(annual[0].payment, 1200);
+  assert.equal(annual.length, 2);
+  assert.equal(annual[0].dateStr, '2026');
+  assert.equal(annual[1].dateStr, '2027');
+  assertClose(annual[0].payment, 600);
+  assertClose(annual[0].remaining, 600);
+  assertClose(annual[1].payment, 600);
+  assertClose(annual[1].remaining, 0);
   assert.deepEqual(annual[0].activeLoanNames, ['住房, 主贷']);
   assert.equal(annual[0].activeLoans, '住房, 主贷');
 });
@@ -259,4 +342,17 @@ test('最大金额、最高利率和最长期限下所有结果保持有限', ()
   )));
   assertClose(schedule.reduce((sum, row) => sum + row.principal, 0), MAX_LOAN_AMOUNT, 0.01);
   assert.equal(schedule.at(-1).remaining, 0);
+});
+
+test('防御各种异常输入类型不会导致崩溃', () => {
+  assert.equal(toFiniteNumber(null), 0);
+  assert.equal(toFiniteNumber(undefined), 0);
+  assert.equal(toFiniteNumber('   '), 0);
+  assert.equal(toFiniteNumber(NaN), 0);
+  assert.equal(clampNumber(null, 10, 100, 10), 10);
+  assert.equal(clampInteger('abc', 1, 10, 5), 5);
+  assert.deepEqual(sanitizePrepayments(null), []);
+  assert.deepEqual(sanitizePrepayments([null, {}]), []);
+  assert.deepEqual(sanitizeLoans(null), [sanitizeLoan(DEFAULT_LOAN, 0)]);
+  assert.deepEqual(getAnnualAggregatedData(null), []);
 });
