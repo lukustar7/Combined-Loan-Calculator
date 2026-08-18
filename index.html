@@ -12,9 +12,46 @@
 
   <div class="win98-desktop">
     
-    <!-- 主窗口 -->
+    <!-- Google Material 3 现代顶栏 (Win98 模式下隐藏，Material 3 模式下显示) -->
+    <header class="m3-top-app-bar">
+      <div class="m3-header-left">
+        <div class="m3-logo">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </div>
+        <div class="m3-title-group">
+          <h1 class="m3-app-title">贷款组合管理器</h1>
+          <span class="m3-app-subtitle">LoanLens · 多笔债务合并与提前还款省息测算</span>
+        </div>
+      </div>
+      <div class="m3-header-actions">
+        <button class="m3-btn m3-btn-tonal" onclick="createMortgageCombo()">
+          <span class="m3-btn-icon">🏠</span><span>一键房贷组合</span>
+        </button>
+        <button class="m3-btn m3-btn-filled" onclick="createNewLoan()">
+          <span class="m3-btn-icon">+</span><span>新增贷款</span>
+        </button>
+        <button class="m3-btn m3-btn-outlined" onclick="toggleThemeQuick()" id="m3ThemeToggleBtn">
+          <span class="m3-btn-icon">🎨</span><span>切换到 Windows 98</span>
+        </button>
+        <button class="m3-icon-btn" onclick="clearAllData()" title="清空并重置所有数据">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
+        </button>
+        <button class="m3-icon-btn" onclick="showAboutDialog()" title="关于本软件">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 主窗口容器 -->
     <div class="win98-window win-outset" id="mainWindow">
       
+      <!-- Windows 98 窗口标题栏 (Material 3 模式下隐藏) -->
       <div class="win-titlebar">
         <div class="win-titlebar-icon win-icon-folder"></div>
         <div class="win-titlebar-title" id="windowTitle">贷款组合管理器</div>
@@ -29,6 +66,9 @@
         
         <!-- 左侧导航栏 -->
         <div class="win-sidebar-tree win-inset">
+          <div class="m3-sidebar-header">
+            <span class="m3-sidebar-title">我的贷款项目</span>
+          </div>
           <div class="win-tree-container" id="treeView"></div>
         </div>
 
@@ -64,14 +104,26 @@
 
             <!-- 图表监视器 -->
             <div class="win-group-box win-chart-panel" style="position: relative;">
-              <span class="win-group-box-title">系统性能监视器 - 未来月供还款趋势</span>
-              <div class="win-chart-toolbar" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; font-size: 11px; z-index: 10;">
-                <label for="chartViewSelect" style="margin-right: 4px;">查看视图：</label>
-                <select id="chartViewSelect" class="win-select" onchange="switchChartViewMode()" style="padding: 1px 4px; font-size: 11px; height: 22px;">
-                  <option value="monthly" selected>按月明细</option>
-                  <option value="annual">按年汇总</option>
-                </select>
+              <div class="win-group-box-header">
+                <span class="win-group-box-title">系统性能监视器 - 未来月供还款趋势</span>
+                <div class="win-chart-toolbar">
+                  <div class="win-chart-control-group">
+                    <label for="chartTypeSelect">图表模式：</label>
+                    <select id="chartTypeSelect" class="win-select" onchange="switchChartTypeMode()">
+                      <option value="trend" selected>单笔走势对比 (横线/斜线独立曲线)</option>
+                      <option value="stacked">组合堆叠构成 (累积总负荷)</option>
+                    </select>
+                  </div>
+                  <div class="win-chart-control-group">
+                    <label for="chartViewSelect">汇总粒度：</label>
+                    <select id="chartViewSelect" class="win-select" onchange="switchChartViewMode()">
+                      <option value="monthly" selected>按月明细</option>
+                      <option value="annual">按年汇总</option>
+                    </select>
+                  </div>
+                </div>
               </div>
+              
               <div style="flex: 1; position: relative; min-height: 0;">
                 <div id="chartFallback" class="win-chart-fallback" style="display: none;"></div>
                 <canvas id="monthlyTrendChart"></canvas>
@@ -123,13 +175,13 @@
                   <div class="win-group-box">
                     <span class="win-group-box-title">贷款基本属性配置</span>
                     
-                    <div style="max-width: 560px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="max-width: 580px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
                       
                       <div class="win-field-row">
                         <label>贷款名称：</label>
                         <input type="text" id="loanName" class="win-input" oninput="handleParamChange()" style="flex: 0.6;">
                         <div class="win-quick-names" style="display: flex; gap: 4px; flex-wrap: wrap;">
-                          <button class="win-quick-name-btn" onclick="setQuickName('房贷')">房贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('商业房贷')">商贷</button>
                           <button class="win-quick-name-btn" onclick="setQuickName('公积金房贷')">公积金</button>
                           <button class="win-quick-name-btn" onclick="setQuickName('车贷')">车贷</button>
                           <button class="win-quick-name-btn" onclick="setQuickName('消费贷')">消费贷</button>
@@ -159,11 +211,11 @@
                         <div class="win-segment-control">
                           <label class="win-radio-container">
                             <input type="radio" name="repayMethod" value="ACPI" class="win-radio" checked onchange="handleParamChange()">
-                            <span>等额本息 (每月等额)</span>
+                            <span>等额本息 (每月月供恒定)</span>
                           </label>
                           <label class="win-radio-container">
                             <input type="radio" name="repayMethod" value="ACP" class="win-radio" onchange="handleParamChange()">
-                            <span>等额本金 (逐月递减)</span>
+                            <span>等额本金 (每月月供逐月递减)</span>
                           </label>
                         </div>
                       </div>
@@ -285,7 +337,7 @@
 
     </div>
 
-    <!-- 底部任务栏 -->
+    <!-- Windows 98 底部任务栏 (Material 3 模式下隐藏) -->
     <div class="win98-taskbar">
       <button class="win-btn win-start-btn" id="startBtn" onclick="toggleStartMenu()">
         <span class="win-start-logo"></span>
@@ -301,7 +353,7 @@
       </div>
     </div>
 
-    <!-- 开始菜单 -->
+    <!-- Windows 98 开始菜单 (Material 3 模式下隐藏) -->
     <div class="win-start-menu" id="startMenu">
       <div class="win-start-menu-sidebar">Windows 98</div>
       <div class="win-start-menu-content">
@@ -342,7 +394,7 @@
           <div class="win-dialog-message">
             <strong>贷款组合管理器 (Combined Loan Calculator)</strong><br>
             <span>版本号：v1.5.0</span><br><br>
-            <span>纯静态多笔债务合并与提前还款测算工具。支持零延迟实时反应式计算、提前还款省息效益分析、CSV 导出与 Windows 98 / Google Material 3 双主题切换。</span><br><br>
+            <span>纯静态多笔债务合并与提前还款测算工具。支持零延迟实时反应式计算、提前还款省息效益分析、单笔独立走势与组合堆叠分析、CSV 导出，以及 Windows 98 经典与 Google Material 3 现代双主题切换。</span><br><br>
             <span>著作权所有 (C) 1998 - 2026.</span>
           </div>
         </div>

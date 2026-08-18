@@ -27,7 +27,7 @@ import {
  * ============================================================================
  * 贷款组合管理器页面交互与渲染驱动脚本 v1.5.0
  * ============================================================================
- * 负责 DOM 交互、浏览器存储、CSV 导出与 Chart.js 动态渲染。
+ * 负责 DOM 交互、浏览器存储、CSV 导出、双主题切换与 Chart.js 动态渲染。
  * 纯数学计算与数据清洗统一由 src/loan-engine.js 提供。
  * ============================================================================
  */
@@ -38,7 +38,8 @@ let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
 let trendChart = null; // Chart.js 实例
 let globalMonthlyAggregated = []; // 全局合并月度计划的聚合缓存，用于 CSV 导出
-let currentChartViewMode = 'monthly'; // 图表查看视图：'monthly' (按月明细) 或 'annual' (按年汇总)
+let currentChartViewMode = 'monthly'; // 图表查看粒度：'monthly' (按月明细) 或 'annual' (按年汇总)
+let currentChartTypeMode = 'trend'; // 图表展示模式：'trend' (单笔独立走势对比，横线/斜线直观可见) 或 'stacked' (组合堆叠构成)
 
 const STORAGE_KEY = 'COMBINED_LOANS_DATA';
 const THEME_PREF_KEY = 'APP_THEME_PREF';
@@ -164,6 +165,14 @@ function switchChartViewMode() {
   }
 }
 
+function switchChartTypeMode() {
+  const selectEl = document.getElementById('chartTypeSelect');
+  if (selectEl) {
+    currentChartTypeMode = selectEl.value;
+    calculateAll();
+  }
+}
+
 function renderSummaryTable(data) {
   const tbody = document.getElementById('tableSummaryBody');
   if (!tbody) return;
@@ -184,7 +193,7 @@ function renderSummaryTable(data) {
 }
 
 // ==========================================
-// 2. Chart.js 堆叠趋势图表渲染
+// 2. Chart.js 趋势与堆叠图表渲染核心
 // ==========================================
 
 function renderTrendChart(months, aggregatedData) {
@@ -217,49 +226,100 @@ function renderTrendChart(months, aggregatedData) {
   }
 
   const currentTheme = getGlobalTheme();
-  const isLineChart = months.length > 60 && currentChartViewMode === 'monthly';
-
   let textColor = currentTheme === 'material' ? '#1e293b' : '#000000';
   let gridColor = currentTheme === 'material' ? '#e2e8f0' : '#808080';
   let tooltipBg = currentTheme === 'material' ? '#0f172a' : '#ffffcc';
   let tooltipText = currentTheme === 'material' ? '#ffffff' : '#000000';
 
-  const datasets = loans.map((loan, index) => {
-    const colorInfo = PALETTE_20[index % PALETTE_20.length];
-    const dataPoints = aggregatedData.map(row => row.breakdown[loan.id] || 0);
+  let datasets = [];
+  let isStacked = (currentChartTypeMode === 'stacked');
 
-    const fillBg = currentTheme === 'material' ? colorInfo.m3Fill : colorInfo.fill;
-    const borderCol = currentTheme === 'material' ? colorInfo.m3Border : colorInfo.border;
+  if (currentChartTypeMode === 'trend') {
+    // ==========================================
+    // 模式 A：单笔独立走势对比 (不堆叠，横线/斜线真实反映)
+    // ==========================================
+    datasets = loans.map((loan, index) => {
+      const colorInfo = PALETTE_20[index % PALETTE_20.length];
+      const dataPoints = aggregatedData.map(row => (row.breakdown ? (row.breakdown[loan.id] || 0) : 0));
+      const lineCol = currentTheme === 'material' ? colorInfo.m3Fill : colorInfo.fill;
+      const methodTag = loan.method === 'ACP' ? '等额本金' : '等额本息';
 
-    const ds = {
-      label: loan.name,
-      loanId: loan.id,
-      data: dataPoints,
-      backgroundColor: fillBg,
-      borderColor: borderCol,
-      stack: 'combinedStack'
-    };
+      return {
+        type: 'line',
+        label: `${loan.name} (${methodTag})`,
+        loanId: loan.id,
+        data: dataPoints,
+        borderColor: lineCol,
+        backgroundColor: lineCol,
+        fill: false,
+        borderWidth: 2,
+        pointRadius: months.length > 80 ? 0 : 2,
+        pointHoverRadius: 5,
+        tension: 0 // 纯金融折线，保持精准形态
+      };
+    });
 
-    if (isLineChart) {
-      ds.type = 'line';
-      ds.fill = false;
-      ds.pointRadius = 0;
-      ds.pointHoverRadius = 4;
-      ds.tension = 0.1;
-      ds.borderWidth = 2;
-    } else {
-      ds.type = 'bar';
-      ds.borderWidth = 1;
-      ds.barPercentage = currentTheme === 'material' ? 0.85 : 1.0;
-      ds.categoryPercentage = currentTheme === 'material' ? 0.85 : 1.0;
+    // 如果有多笔贷款，额外追加一条“合并总月供”曲线
+    if (loans.length > 1) {
+      const totalPayments = aggregatedData.map(row => row.payment || 0);
+      const totalCol = currentTheme === 'material' ? '#0041a2' : '#000000';
+      datasets.unshift({
+        type: 'line',
+        label: '合并总月供 (合并负荷)',
+        loanId: '__total__',
+        data: totalPayments,
+        borderColor: totalCol,
+        backgroundColor: totalCol,
+        borderWidth: 3,
+        borderDash: currentTheme === 'material' ? [4, 3] : [3, 2],
+        fill: false,
+        pointRadius: months.length > 80 ? 0 : 2.5,
+        pointHoverRadius: 6,
+        tension: 0
+      });
     }
+  } else {
+    // ==========================================
+    // 模式 B：组合堆叠构成 (累积堆叠)
+    // ==========================================
+    const isBar = (currentChartViewMode === 'annual' || months.length <= 60);
 
-    return ds;
-  });
+    datasets = loans.map((loan, index) => {
+      const colorInfo = PALETTE_20[index % PALETTE_20.length];
+      const dataPoints = aggregatedData.map(row => (row.breakdown ? (row.breakdown[loan.id] || 0) : 0));
+      const fillBg = currentTheme === 'material' ? colorInfo.m3Fill : colorInfo.fill;
+      const borderCol = currentTheme === 'material' ? colorInfo.m3Border : colorInfo.border;
+
+      const ds = {
+        label: loan.name,
+        loanId: loan.id,
+        data: dataPoints,
+        backgroundColor: fillBg,
+        borderColor: borderCol,
+        stack: 'combinedStack'
+      };
+
+      if (isBar) {
+        ds.type = 'bar';
+        ds.borderWidth = 1;
+        ds.barPercentage = currentTheme === 'material' ? 0.85 : 1.0;
+        ds.categoryPercentage = currentTheme === 'material' ? 0.85 : 1.0;
+      } else {
+        ds.type = 'line';
+        ds.fill = true;
+        ds.pointRadius = 0;
+        ds.pointHoverRadius = 4;
+        ds.tension = 0;
+        ds.borderWidth = 1.5;
+      }
+
+      return ds;
+    });
+  }
 
   try {
     trendChart = new ChartConstructor(ctx, {
-      type: isLineChart ? 'line' : 'bar',
+      type: 'line',
       data: {
         labels: months,
         datasets: datasets
@@ -293,6 +353,10 @@ function renderTrendChart(months, aggregatedData) {
               label: function(context) {
                 const loanId = context.dataset.loanId;
                 const rawVal = context.raw;
+                if (loanId === '__total__') {
+                  return ` 👉 合并总月供: ${formatNumber(rawVal)} 元`;
+                }
+
                 const dateRow = aggregatedData[context.dataIndex];
                 const prepayVal = (dateRow && dateRow.breakdown) ? (dateRow.breakdown[`${loanId}_prepay`] || 0) : 0;
                 
@@ -307,7 +371,7 @@ function renderTrendChart(months, aggregatedData) {
         },
         scales: {
           x: {
-            stacked: true,
+            stacked: isStacked,
             grid: {
               color: gridColor,
               borderDash: currentTheme === 'material' ? [] : [1, 2]
@@ -319,7 +383,7 @@ function renderTrendChart(months, aggregatedData) {
           },
           y: {
             min: 0,
-            stacked: true,
+            stacked: isStacked,
             grid: {
               color: gridColor,
               borderDash: currentTheme === 'material' ? [] : [1, 2]
@@ -369,12 +433,14 @@ function renderTreeView() {
   if (!container) return;
   container.innerHTML = '';
 
+  const currentTheme = getGlobalTheme();
+
   // 1. 全局汇总节点
   const sumNode = document.createElement('div');
   sumNode.className = `win-tree-item ${currentSelectedId === 'summary' ? 'selected' : ''}`;
   sumNode.innerHTML = `
     <span class="win-tree-item-icon win-icon-chart"></span>
-    <span>贷款组合总览</span>
+    <span class="win-tree-item-title">贷款组合总览</span>
   `;
   sumNode.onclick = () => selectTreeNode('summary');
   container.appendChild(sumNode);
@@ -383,9 +449,15 @@ function renderTreeView() {
   loans.forEach(loan => {
     const loanNode = document.createElement('div');
     loanNode.className = `win-tree-item ${currentSelectedId === loan.id ? 'selected' : ''}`;
+    const methodBadge = loan.method === 'ACP' ? '等额本金' : '等额本息';
+    const amountWanyuan = (loan.amount / 10000).toFixed(0);
+
     loanNode.innerHTML = `
       <span class="win-tree-item-icon win-icon-file"></span>
-      <span>${escapeHTML(loan.name)}</span>
+      <div class="win-tree-item-info">
+        <span class="win-tree-item-name">${escapeHTML(loan.name)}</span>
+        <span class="win-tree-item-badge">${methodBadge} · ${amountWanyuan}万</span>
+      </div>
     `;
     loanNode.onclick = () => selectTreeNode(loan.id);
     container.appendChild(loanNode);
@@ -393,27 +465,28 @@ function renderTreeView() {
 
   // 3. 操作入口区
   const actionContainer = document.createElement('div');
+  actionContainer.className = 'win-sidebar-actions';
   actionContainer.style.marginTop = '10px';
   actionContainer.style.borderTop = '1px dotted var(--win-shadow)';
-  actionContainer.style.paddingTop = '6px';
+  actionContainer.style.paddingTop = '8px';
   actionContainer.style.display = 'flex';
   actionContainer.style.flexDirection = 'column';
-  actionContainer.style.gap = '4px';
+  actionContainer.style.gap = '6px';
 
   // 新增单笔贷款
   const addNode = document.createElement('div');
-  addNode.className = 'win-tree-item';
+  addNode.className = 'win-tree-item win-tree-action-item';
   if (loans.length >= MAX_LOANS) {
     addNode.style.opacity = '0.6';
     addNode.style.cursor = 'not-allowed';
     addNode.innerHTML = `
       <span class="win-tree-item-icon win-icon-disabled"></span>
-      <span>新增单笔贷款 (已达20笔上限)</span>
+      <span>新增单笔贷款 (已达上限)</span>
     `;
   } else {
     addNode.innerHTML = `
       <span class="win-tree-item-icon win-icon-plus"></span>
-      <span class="win-tree-action-btn">新增单笔贷款</span>
+      <span class="win-tree-action-btn">+ 新增单笔贷款</span>
     `;
   }
   addNode.onclick = createNewLoan;
@@ -422,10 +495,10 @@ function renderTreeView() {
   // 一键创建房贷组合 (公积金 + 商贷)
   if (loans.length < MAX_LOANS - 1) {
     const comboNode = document.createElement('div');
-    comboNode.className = 'win-tree-item';
+    comboNode.className = 'win-tree-item win-tree-action-item';
     comboNode.innerHTML = `
       <span class="win-tree-item-icon win-icon-chart"></span>
-      <span class="win-tree-action-btn" style="color: #0b57d0;">创建房贷组合 (公积金+商贷)</span>
+      <span class="win-tree-action-btn" style="color: #0b57d0;">🏠 一键房贷组合</span>
     `;
     comboNode.onclick = createMortgageCombo;
     actionContainer.appendChild(comboNode);
@@ -628,11 +701,8 @@ function handleParamChange() {
     }
   }
 
-  // 同步树形目录名称
-  const matchingTreeItem = document.querySelector(`.win-tree-item.selected span:last-child`);
-  if (matchingTreeItem) {
-    matchingTreeItem.innerText = loan.name;
-  }
+  // 同步树形目录
+  renderTreeView();
 
   // 刷新单笔指标与省息效益
   const schedule = calculateSingleLoan(loan);
@@ -710,10 +780,10 @@ function createNewLoan() {
   }
 
   let count = 1;
-  let newName = `贷款 ${loans.length + count}`;
+  let newName = `商业贷款 ${loans.length + count}`;
   while (loans.some(l => l.name === newName)) {
     count++;
-    newName = `贷款 ${loans.length + count}`;
+    newName = `商业贷款 ${loans.length + count}`;
   }
 
   const newId = createUniqueLoanId();
@@ -1053,6 +1123,30 @@ function getGlobalTheme() {
   return 'standard';
 }
 
+function toggleThemeQuick() {
+  const currentTheme = getGlobalTheme();
+  const nextTheme = currentTheme === 'material' ? 'standard' : 'material';
+  
+  document.body.classList.remove('theme-standard', 'theme-material', 'theme-vista');
+  document.body.classList.add(`theme-${nextTheme}`);
+  writeStorage(THEME_PREF_KEY, nextTheme);
+
+  updateThemeToggleBtnText(nextTheme);
+  renderTreeView();
+  calculateAll();
+}
+
+function updateThemeToggleBtnText(themeName) {
+  const btn = document.getElementById('m3ThemeToggleBtn');
+  if (btn) {
+    if (themeName === 'material') {
+      btn.innerHTML = `<span class="m3-btn-icon">🎨</span><span>切换到 Windows 98</span>`;
+    } else {
+      btn.innerHTML = `<span class="m3-btn-icon">✨</span><span>切换到 Material 3</span>`;
+    }
+  }
+}
+
 function showDisplayProperties(show) {
   const overlay = document.getElementById('displayPropertiesOverlay');
   if (!overlay) return;
@@ -1091,6 +1185,8 @@ function applyThemeSelection() {
   document.body.classList.remove('theme-standard', 'theme-material', 'theme-vista');
   document.body.classList.add(`theme-${targetTheme}`);
   writeStorage(THEME_PREF_KEY, targetTheme);
+  updateThemeToggleBtnText(targetTheme);
+  renderTreeView();
   calculateAll();
 }
 
@@ -1182,6 +1278,7 @@ function initApp() {
   const currentTheme = getGlobalTheme();
   document.body.classList.remove('theme-standard', 'theme-material', 'theme-vista');
   document.body.classList.add(`theme-${currentTheme}`);
+  updateThemeToggleBtnText(currentTheme);
 
   const savedData = readStorage(STORAGE_KEY);
   if (savedData) {
@@ -1226,11 +1323,13 @@ Object.assign(globalThis, {
   showAboutDialog,
   showDisplayProperties,
   showPrepayManager,
+  switchChartTypeMode,
   switchChartViewMode,
   switchDetailTab,
   syncPrepayAmountHint,
   syncPrepayDateHint,
   toggleStartMenu,
+  toggleThemeQuick,
   visitGitHub
 });
 
