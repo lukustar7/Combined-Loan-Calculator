@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="基于 Windows 98 经典复古 UI 的通用多笔贷款合并管理器。支持零延迟实时反应式计算、多笔债务时间线对齐合流与堆叠月供趋势监视。">
-  <title>我的电脑 - 贷款组合管理器.exe</title>
-  <link rel="stylesheet" href="styles.css?v=2.2.2">
+  <meta name="description" content="多笔贷款合并计算与提前还款模拟管理器。支持多笔债务时间线对齐合流、省息效益测算、月供趋势分析与一键 CSV 导出。">
+  <title>贷款组合管理器 - 多笔贷款合并计算与提前还款分析</title>
+  <link rel="stylesheet" href="styles.css?v=1.5.0">
   <script src="vendor/chart.umd.min.js"></script>
 </head>
-<body>
+<body class="theme-standard">
 
   <div class="win98-desktop">
     
@@ -17,17 +17,17 @@
       
       <div class="win-titlebar">
         <div class="win-titlebar-icon win-icon-folder"></div>
-        <div class="win-titlebar-title" id="windowTitle" data-i18n="windowTitle">我的电脑 - 贷款组合管理器.exe</div>
+        <div class="win-titlebar-title" id="windowTitle">贷款组合管理器</div>
         <div class="win-titlebar-controls">
-          <button class="win-titlebar-btn" title="最小化">_</button>
+          <button class="win-titlebar-btn" title="最小化" onclick="minimizeOrRestoreMainWindow()">_</button>
           <button class="win-titlebar-btn" title="最大化">⛶</button>
-          <button class="win-titlebar-btn close-btn" title="关闭">✖</button>
+          <button class="win-titlebar-btn close-btn" title="关闭" onclick="alert('窗口已处于运行状态。您可以点击最小化将其放入任务栏。')">✖</button>
         </div>
       </div>
 
       <div class="win-explorer-layout">
         
-        <!-- 左侧树 -->
+        <!-- 左侧导航栏 -->
         <div class="win-sidebar-tree win-inset">
           <div class="win-tree-container" id="treeView"></div>
         </div>
@@ -35,40 +35,41 @@
         <!-- 右侧工作区 -->
         <div class="win-workspace">
           
-          <!-- 全局汇总 -->
+          <!-- 全局汇总面板 -->
           <div class="win-workspace-content" id="panelSummary" style="display: flex;">
             
+            <!-- 核心数据指标卡片 -->
             <div class="win-summary-grid" id="summaryGrid">
               <div class="win-summary-card win-inset">
-                <span class="label" data-i18n="labelTotalPrincipal">贷款总额</span>
+                <span class="label">贷款总额</span>
                 <span class="value" id="sumPrincipal">0.00 万元</span>
               </div>
               <div class="win-summary-card win-inset">
-                <span class="label" data-i18n="labelTotalInterest">应还总利息</span>
+                <span class="label">应还总利息</span>
                 <span class="value" id="sumInterest">0.00 万元</span>
               </div>
               <div class="win-summary-card win-inset">
-                <span class="label" data-i18n="labelTotalSum">累计本息合计</span>
+                <span class="label">累计本息合计</span>
                 <span class="value" id="sumTotal">0.00 万元</span>
               </div>
               <div class="win-summary-card win-inset">
-                <span class="label" data-i18n="labelFirstMonth">首月还款额</span>
+                <span class="label">首月还款额</span>
                 <span class="value" id="sumFirstMonth">0.00 元</span>
               </div>
               <div class="win-summary-card win-inset">
-                <span class="label" data-i18n="labelPeakMonth">最高月供月份</span>
+                <span class="label">最高月供月份</span>
                 <span class="value" id="sumPeakMonth">-</span>
               </div>
             </div>
 
+            <!-- 图表监视器 -->
             <div class="win-group-box win-chart-panel" style="position: relative;">
-              <span class="win-group-box-title" data-i18n="chartTitle">系统性能监视器 - 未来月供趋势图表</span>
-              <!-- 图表控制工具栏 -->
+              <span class="win-group-box-title">系统性能监视器 - 未来月供还款趋势</span>
               <div class="win-chart-toolbar" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; font-size: 11px; z-index: 10;">
-                <label for="chartViewSelect" data-i18n="lblChartView" style="margin-right: 4px;">查看视图：</label>
-                <select id="chartViewSelect" class="win-select" onchange="switchChartViewMode()" style="padding: 1px 4px; font-size: 11px; height: 20px;">
-                  <option value="monthly" data-i18n="optViewMonthly" selected>按月明细</option>
-                  <option value="annual" data-i18n="optViewAnnual">按年汇总</option>
+                <label for="chartViewSelect" style="margin-right: 4px;">查看视图：</label>
+                <select id="chartViewSelect" class="win-select" onchange="switchChartViewMode()" style="padding: 1px 4px; font-size: 11px; height: 22px;">
+                  <option value="monthly" selected>按月明细</option>
+                  <option value="annual">按年汇总</option>
                 </select>
               </div>
               <div style="flex: 1; position: relative; min-height: 0;">
@@ -77,23 +78,24 @@
               </div>
             </div>
 
+            <!-- 合并月度还款计划总表 -->
             <div class="win-group-box" style="flex: 1; display: flex; flex-direction: column; min-height: 200px;">
-              <span class="win-group-box-title" data-i18n="mergedTableTitle">合并月度还款计划总表</span>
-              <div style="display: flex; justify-content: flex-end; margin-bottom: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span class="win-group-box-title" style="position: static; margin: 0; padding: 0;">合并月度还款计划总表</span>
                 <button class="win-btn" onclick="exportSummaryCSV()" style="font-size:11px;">
-                  <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
+                  <span class="win-icon-save"></span><span>导出 CSV</span>
                 </button>
               </div>
               <div class="win-table-container" style="flex:1;">
                 <table class="win-table" id="tableSummary">
                   <thead>
                     <tr>
-                      <th data-i18n="thDate">还款年月</th>
-                      <th data-i18n="thPayment">月供总额(元)</th>
-                      <th data-i18n="thPrincipal">本金总额(元)</th>
-                      <th data-i18n="thInterest">利息总额(元)</th>
-                      <th data-i18n="thRemaining">剩余本金(元)</th>
-                      <th data-i18n="thActive">活跃贷款</th>
+                      <th>还款年月</th>
+                      <th class="cell-num">月供总额 (元)</th>
+                      <th class="cell-num">本金总额 (元)</th>
+                      <th class="cell-num">利息总额 (元)</th>
+                      <th class="cell-num">剩余本金 (元)</th>
+                      <th style="text-align: center;">活跃贷款</th>
                     </tr>
                   </thead>
                   <tbody id="tableSummaryBody"></tbody>
@@ -103,112 +105,134 @@
 
           </div>
 
-          <!-- 单笔贷款详情 -->
+          <!-- 单笔贷款详情面板 -->
           <div class="win-workspace-content" id="panelDetail" style="display: none;">
             
             <div class="win-tab-container">
               <div class="win-tabs">
-                <button class="win-tab active" onclick="switchDetailTab('params')" data-i18n="tabParams">基本参数(P)</button>
-                <button class="win-tab" onclick="switchDetailTab('plan')" data-i18n="tabPlan">还款计划表(L)</button>
+                <button class="win-tab active" onclick="switchDetailTab('params')">基本参数(P)</button>
+                <button class="win-tab" onclick="switchDetailTab('plan')">还款计划表(L)</button>
               </div>
               
               <div class="win-tab-content-wrapper">
                 
-                <!-- 参数页 -->
+                <!-- 参数配置页 -->
                 <div class="win-tab-pane active" id="tabDetailParams">
                   
+                  <!-- 贷款基本属性配置 -->
                   <div class="win-group-box">
-                    <span class="win-group-box-title" data-i18n="groupLoanConfig">贷款基本属性配置</span>
+                    <span class="win-group-box-title">贷款基本属性配置</span>
                     
-                    <div style="max-width: 520px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="max-width: 560px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
                       
                       <div class="win-field-row">
-                        <label data-i18n="lblName">贷款名称：</label>
+                        <label>贷款名称：</label>
                         <input type="text" id="loanName" class="win-input" oninput="handleParamChange()" style="flex: 0.6;">
                         <div class="win-quick-names" style="display: flex; gap: 4px; flex-wrap: wrap;">
-                          <button class="win-quick-name-btn" onclick="setQuickName('Mortgage')" data-i18n="nameMortgage">房贷</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('Auto')" data-i18n="nameAuto">车贷</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('Card')" data-i18n="nameCard">信用卡</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('Consumer')" data-i18n="nameConsumer">消费贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('房贷')">房贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('公积金房贷')">公积金</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('车贷')">车贷</button>
+                          <button class="win-quick-name-btn" onclick="setQuickName('消费贷')">消费贷</button>
                         </div>
                       </div>
                       
-                      <div class="win-field-row">
-                        <label data-i18n="lblAmount">贷款金额：</label>
-                        <input type="number" id="loanAmount" class="win-input" min="0.01" step="any" oninput="handleParamChange()">
-                        <span class="unit" data-i18n="unitYuan">元</span>
+                      <div class="win-field-row" style="align-items: flex-start;">
+                        <label style="margin-top: 4px;">贷款金额：</label>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                          <div style="display: flex; align-items: center; gap: 6px;">
+                            <input type="number" id="loanAmount" class="win-input" min="0.01" step="any" oninput="handleParamChange()" style="flex: 1;">
+                            <span class="unit">元</span>
+                          </div>
+                          <!-- 实时中文大写与万元换算辅助胶囊 -->
+                          <div class="win-amount-helper" id="loanAmountHelper">= 100.00 万元 (壹佰万元整)</div>
+                        </div>
                       </div>
 
                       <div class="win-field-row">
-                        <label data-i18n="lblRate">年化利率：</label>
-                        <input type="number" id="loanRate" class="win-input" min="0" max="100" step="0.01" oninput="handleParamChange()">
+                        <label>年化利率：</label>
+                        <input type="number" id="loanRate" class="win-input" min="0" max="100" step="0.01" oninput="handleParamChange()" style="flex: 0.4;">
                         <span class="unit">%</span>
                       </div>
 
                       <div class="win-field-row">
-                        <label data-i18n="lblMethod">还款方式：</label>
-                        <div style="flex: 1; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                          <label class="win-radio-container" style="width: auto;">
+                        <label>还款方式：</label>
+                        <div class="win-segment-control">
+                          <label class="win-radio-container">
                             <input type="radio" name="repayMethod" value="ACPI" class="win-radio" checked onchange="handleParamChange()">
-                            <span data-i18n="methodACPI">等额本息</span>
+                            <span>等额本息 (每月等额)</span>
                           </label>
-                          <label class="win-radio-container" style="width: auto;">
+                          <label class="win-radio-container">
                             <input type="radio" name="repayMethod" value="ACP" class="win-radio" onchange="handleParamChange()">
-                            <span data-i18n="methodACP">等额本金</span>
+                            <span>等额本金 (逐月递减)</span>
                           </label>
                         </div>
                       </div>
 
                       <div class="win-field-row">
-                        <label data-i18n="lblTerm">贷款期限：</label>
-                        <input type="number" id="loanTerm" class="win-input" min="1" step="1" oninput="handleParamChange()" style="flex: 0.5;">
-                        <span class="unit" data-i18n="unitMonth">个月</span>
+                        <label>贷款期限：</label>
+                        <input type="number" id="loanTerm" class="win-input" min="1" step="1" oninput="handleParamChange()" style="flex: 0.35;">
+                        <span class="unit">个月</span>
                         <div class="win-quick-terms">
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(60)" data-i18n="btn5Yr">5年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(120)" data-i18n="btn10Yr">10年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(240)" data-i18n="btn20Yr">20年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(360)" data-i18n="btn30Yr">30年</button>
+                          <button class="win-quick-term-btn" onclick="setQuickTerm(60)">5年</button>
+                          <button class="win-quick-term-btn" onclick="setQuickTerm(120)">10年</button>
+                          <button class="win-quick-term-btn" onclick="setQuickTerm(240)">20年</button>
+                          <button class="win-quick-term-btn" onclick="setQuickTerm(360)">30年</button>
                         </div>
                       </div>
 
                       <div class="win-field-row">
-                        <label data-i18n="lblStart">首次还款：</label>
+                        <label>首次还款：</label>
                         <input type="number" id="loanStartYear" class="win-input" min="1990" max="2100" step="1" oninput="handleParamChange()" style="flex: 0.35;">
-                        <span style="margin: 0 2px;" data-i18n="lblYear">年</span>
+                        <span style="margin: 0 2px;">年</span>
                         <input type="number" id="loanStartMonth" class="win-input" min="1" max="12" step="1" oninput="handleParamChange()" style="flex: 0.25;">
-                        <span data-i18n="lblMonthUnit">月</span>
+                        <span>月</span>
                       </div>
 
                     </div>
                   </div>
 
-                  <!-- 提前还款模拟 -->
-                  <div class="win-group-box" style="margin-top: 15px;">
-                    <span class="win-group-box-title" data-i18n="groupPrepay">提前还款模拟 (可选)</span>
-                    <div style="max-width: 520px; margin: 8px 0; display: flex; flex-direction: column; gap: 10px;">
-                      <div class="win-field-row" style="align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <span id="prepaySummaryText" data-i18n="lblNoPrepay">暂无提前还款配置</span>
-                        <button class="win-btn" onclick="showPrepayManager(true)" style="padding: 4px 10px;">
-                          <span class="win-icon-calendar"></span><span data-i18n="btnManagePrepay">管理提前还款配置(M)...</span>
+                  <!-- 提前还款模拟与省息效益 -->
+                  <div class="win-group-box" style="margin-top: 12px;">
+                    <span class="win-group-box-title">提前还款模拟与省息效益</span>
+                    <div style="margin: 8px 0; display: flex; flex-direction: column; gap: 10px;">
+                      
+                      <div class="win-field-row" style="align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <span id="prepaySummaryText" style="font-weight: 500;">暂无提前还款配置</span>
+                        <button class="win-btn" onclick="showPrepayManager(true)" style="padding: 4px 12px;">
+                          <span class="win-icon-calendar"></span><span>管理提前还款配置(M)...</span>
                         </button>
                       </div>
+
+                      <!-- 提前还款省息效益高亮卡片 -->
+                      <div class="win-savings-card" id="prepaySavingsBanner">
+                        <div class="win-savings-item">
+                          <span class="win-savings-label">预计节省利息</span>
+                          <span class="win-savings-value" id="savedInterestText">0.00 万元</span>
+                        </div>
+                        <div class="win-savings-divider"></div>
+                        <div class="win-savings-item">
+                          <span class="win-savings-label">缩短还款期限</span>
+                          <span class="win-savings-value" id="savedMonthsText">0 个月</span>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  <!-- 速览 -->
-                  <div class="win-group-box" style="margin-top: 15px;">
-                    <span class="win-group-box-title" data-i18n="groupQuickView">本笔贷款计算速览</span>
-                    <div class="win-summary-grid" style="margin-top: 5px;">
+                  <!-- 本笔贷款计算速览 -->
+                  <div class="win-group-box" style="margin-top: 12px;">
+                    <span class="win-group-box-title">本笔贷款还款速览</span>
+                    <div class="win-summary-grid" style="margin-top: 6px;">
                       <div class="win-summary-card win-inset">
-                        <span class="label" data-i18n="lblDetailTotal">本笔本息合计</span>
+                        <span class="label">本笔本息合计</span>
                         <span class="value" id="detailSumTotal">0.00 元</span>
                       </div>
                       <div class="win-summary-card win-inset">
-                        <span class="label" data-i18n="lblDetailInterest">本笔应付利息</span>
+                        <span class="label">本笔应付利息</span>
                         <span class="value" id="detailSumInterest">0.00 元</span>
                       </div>
                       <div class="win-summary-card win-inset">
-                        <span class="label" data-i18n="lblDetailFirst">首月应还月供</span>
+                        <span class="label">首月应还月供</span>
                         <span class="value" id="detailFirstMonth">0.00 元</span>
                       </div>
                     </div>
@@ -217,32 +241,32 @@
                   <!-- 操作栏 -->
                   <div class="win-action-bar">
                     <button class="win-btn" onclick="exportSingleCSV()" style="font-size:11px;">
-                      <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
+                      <span class="win-icon-save"></span><span>导出明细 CSV</span>
                     </button>
-                    <button class="win-btn" onclick="deleteCurrentLoan()" style="color: #ff0000; font-weight: bold;">
-                      <span class="win-icon-delete"></span><span data-i18n="btnDelete">销毁本笔贷款.lnk</span>
+                    <button class="win-btn win-btn-danger" onclick="deleteCurrentLoan()">
+                      <span class="win-icon-delete"></span><span>删除此笔贷款</span>
                     </button>
                   </div>
 
                 </div>
 
-                <!-- 计划表页 -->
+                <!-- 还款计划表页 -->
                 <div class="win-tab-pane" id="tabDetailPlan">
-                  <div style="display: flex; justify-content: flex-end; margin-bottom: 4px;">
+                  <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
                     <button class="win-btn" onclick="exportSingleCSV()" style="font-size:11px;">
-                      <span class="win-icon-save"></span><span data-i18n="btnExportCSV">导出 CSV</span>
+                      <span class="win-icon-save"></span><span>导出明细 CSV</span>
                     </button>
                   </div>
                   <div class="win-table-container">
                     <table class="win-table" id="tableDetail">
                       <thead>
                         <tr>
-                          <th data-i18n="thPeriod">期数</th>
-                          <th data-i18n="thDate">还款年月</th>
-                          <th data-i18n="thMonthPay">当月月供(元)</th>
-                          <th data-i18n="thMonthPrincipal">偿还本金(元)</th>
-                          <th data-i18n="thMonthInterest">偿还利息(元)</th>
-                          <th data-i18n="thRemaining">剩余本金(元)</th>
+                          <th>期数</th>
+                          <th>还款年月</th>
+                          <th class="cell-num">当月月供 (元)</th>
+                          <th class="cell-num">偿还本金 (元)</th>
+                          <th class="cell-num">偿还利息 (元)</th>
+                          <th class="cell-num">剩余本金 (元)</th>
                         </tr>
                       </thead>
                       <tbody id="tableDetailBody"></tbody>
@@ -261,11 +285,11 @@
 
     </div>
 
-    <!-- 任务栏 -->
+    <!-- 底部任务栏 -->
     <div class="win98-taskbar">
       <button class="win-btn win-start-btn" id="startBtn" onclick="toggleStartMenu()">
         <span class="win-start-logo"></span>
-        <span data-i18n="btnStart">开始(S)</span>
+        <span>开始(S)</span>
       </button>
       <div class="win-task-items">
         <button class="win-btn win-task-btn active" id="taskbarTitle" onclick="minimizeOrRestoreMainWindow()">
@@ -282,24 +306,24 @@
       <div class="win-start-menu-sidebar">Windows 98</div>
       <div class="win-start-menu-content">
         <div class="win-start-menu-item" onclick="createNewLoan(); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-plus"></span><span data-i18n="menuNewLoan">新增贷款文件(.lnk)</span>
+          <span class="win-menu-icon win-icon-plus"></span><span>新增单笔贷款</span>
+        </div>
+        <div class="win-start-menu-item" onclick="createMortgageCombo(); toggleStartMenu();" style="font-weight: bold; color: var(--win-blue-dark);">
+          <span class="win-menu-icon win-icon-chart"></span><span>一键创建房贷组合 (公积金+商贷)</span>
         </div>
         <div class="win-start-menu-item" onclick="clearAllData(); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-delete"></span><span data-i18n="menuClearAll">清空所有数据(.sys)</span>
+          <span class="win-menu-icon win-icon-delete"></span><span>清空所有数据</span>
         </div>
         <div class="win-start-menu-divider"></div>
         <div class="win-start-menu-item" onclick="showDisplayProperties(true); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-display"></span><span data-i18n="menuTheme">显示属性(D)...</span>
-        </div>
-        <div class="win-start-menu-item" onclick="showLangProperties(true); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-globe"></span><span data-i18n="menuLang">区域和语言设置(L)...</span>
+          <span class="win-menu-icon win-icon-display"></span><span>显示属性(D)...</span>
         </div>
         <div class="win-start-menu-divider"></div>
         <div class="win-start-menu-item" onclick="visitGitHub(); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-link"></span><span data-i18n="menuGitHub">访问 GitHub 仓库</span>
+          <span class="win-menu-icon win-icon-link"></span><span>访问 GitHub 仓库</span>
         </div>
         <div class="win-start-menu-item" onclick="showAboutDialog(); toggleStartMenu();">
-          <span class="win-menu-icon win-icon-help"></span><span data-i18n="menuAbout">关于本软件...</span>
+          <span class="win-menu-icon win-icon-help"></span><span>关于本软件...</span>
         </div>
       </div>
     </div>
@@ -308,7 +332,7 @@
     <div class="win-dialog-overlay" id="aboutDialogOverlay" onclick="closeAboutDialog()">
       <div class="win-dialog win-outset" onclick="event.stopPropagation()">
         <div class="win-titlebar">
-          <div class="win-titlebar-title" data-i18n="aboutTitle">关于贷款组合管理器</div>
+          <div class="win-titlebar-title">关于贷款组合管理器</div>
           <div class="win-titlebar-controls">
             <button class="win-titlebar-btn close-btn" onclick="closeAboutDialog()">✖</button>
           </div>
@@ -316,23 +340,23 @@
         <div class="win-dialog-body">
           <div class="win-dialog-icon win-icon-save"></div>
           <div class="win-dialog-message">
-            <strong>Multi-Loan Manager 98</strong><br>
-            <span data-i18n="aboutVersion">版本号：v2.2.2</span><br><br>
-            <span data-i18n="aboutDesc">通用多笔债务合并分析工具。零按钮实时重算，支持提前还款模拟、CSV 导出、显示属性与多语言切换。</span><br><br>
-            <span data-i18n="aboutCopy">著作权所有 (C) 1998 - 2026.</span>
+            <strong>贷款组合管理器 (Combined Loan Calculator)</strong><br>
+            <span>版本号：v1.5.0</span><br><br>
+            <span>纯静态多笔债务合并与提前还款测算工具。支持零延迟实时反应式计算、提前还款省息效益分析、CSV 导出与 Windows 98 / Google Material 3 双主题切换。</span><br><br>
+            <span>著作权所有 (C) 1998 - 2026.</span>
           </div>
         </div>
         <div class="win-dialog-footer">
-          <button class="win-btn" onclick="closeAboutDialog()" style="width: 70px;" data-i18n="btnOK">确定</button>
+          <button class="win-btn" onclick="closeAboutDialog()" style="width: 70px;">确定</button>
         </div>
       </div>
     </div>
 
     <!-- 显示属性弹窗 -->
     <div class="win-dialog-overlay" id="displayPropertiesOverlay" style="display: none;" onclick="showDisplayProperties(false)">
-      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 360px;">
+      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 380px;">
         <div class="win-titlebar">
-          <div class="win-titlebar-title" data-i18n="displayTitle">显示属性</div>
+          <div class="win-titlebar-title">显示属性</div>
           <div class="win-titlebar-controls">
             <button class="win-titlebar-btn close-btn" onclick="showDisplayProperties(false)">✖</button>
           </div>
@@ -340,22 +364,22 @@
         
         <div class="win-tab-container" style="padding: 6px;">
           <div class="win-tabs">
-            <button class="win-tab active" data-i18n="tabAppearance">外观(A)</button>
+            <button class="win-tab active">外观(A)</button>
           </div>
           
           <div class="win-tab-content-wrapper" style="padding: 10px; gap: 10px; overflow: visible;">
-            <!-- 经典显示器预览框 -->
+            <!-- 主题预览框 -->
             <div class="win-preview-container win-inset" id="displayPreviewContainer">
               <div class="win-preview-desktop">
                 <div class="win-preview-window win-outset">
                   <div class="win-preview-titlebar">
                     <span class="win-preview-titlebar-icon win-icon-folder"></span>
-                    <span class="win-preview-titlebar-title">Active Window</span>
+                    <span class="win-preview-titlebar-title">活动窗口</span>
                     <span class="win-preview-titlebar-btn">✖</span>
                   </div>
                   <div class="win-preview-workspace">
-                    <span class="win-preview-text">Segoe UI</span>
-                    <button class="win-preview-btn">OK</button>
+                    <span class="win-preview-text">Google Material 3</span>
+                    <button class="win-preview-btn">确定</button>
                   </div>
                 </div>
               </div>
@@ -363,80 +387,45 @@
             
             <!-- 方案选择器 -->
             <div class="win-field-row" style="margin-top: 8px;">
-              <label for="themeSelect" style="width: 65px; text-align: left;" data-i18n="lblScheme">方案(S)：</label>
+              <label for="themeSelect" style="width: 75px; text-align: left;">外观方案：</label>
               <select id="themeSelect" class="win-select" style="flex: 1;" onchange="handlePreviewThemeChange()">
-                <option value="standard" data-i18n="schemeStandard">Windows 经典</option>
-                <option value="vista" data-i18n="schemeVista">Windows Vista</option>
+                <option value="standard">Windows 98 经典复古</option>
+                <option value="material">Google Material 3 现代质感</option>
               </select>
             </div>
           </div>
         </div>
         
         <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 6px 10px 10px;">
-          <button class="win-btn" onclick="confirmThemeSelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
-          <button class="win-btn" onclick="showDisplayProperties(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
-          <button class="win-btn" onclick="applyThemeSelection()" style="width: 75px;" id="btnApplyTheme" data-i18n="btnApply">应用(A)</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 区域与语言设置弹窗 -->
-    <div class="win-dialog-overlay" id="langPropertiesOverlay" style="display: none;" onclick="showLangProperties(false)">
-      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 320px;">
-        <div class="win-titlebar">
-          <div class="win-titlebar-title" data-i18n="langTitle">区域和语言设置</div>
-          <div class="win-titlebar-controls">
-            <button class="win-titlebar-btn close-btn" onclick="showLangProperties(false)">✖</button>
-          </div>
-        </div>
-        
-        <div class="win-tab-container" style="padding: 6px;">
-          <div class="win-tabs">
-            <button class="win-tab active" data-i18n="tabRegional">区域设置(R)</button>
-          </div>
-          
-          <div class="win-tab-content-wrapper" style="padding: 15px; gap: 10px; overflow: visible;">
-            <div class="win-field-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-              <span data-i18n="lblLangSelect" style="line-height: 1.4;">请选择系统所使用的语言和区域格式：</span>
-              <select id="langSelect" class="win-select" style="width: 100%;">
-                <option value="zh">中文 (简体)</option>
-                <option value="zh-HK">中文 (繁體)</option>
-                <option value="en">English (United States)</option>
-                <option value="ja">日本語 (日本)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        
-        <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 6px 10px 10px;">
-          <button class="win-btn" onclick="confirmLangSelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
-          <button class="win-btn" onclick="showLangProperties(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
+          <button class="win-btn" onclick="confirmThemeSelection()" style="width: 75px;">确定</button>
+          <button class="win-btn" onclick="showDisplayProperties(false)" style="width: 75px;">取消</button>
+          <button class="win-btn" onclick="applyThemeSelection()" style="width: 75px;" id="btnApplyTheme">应用(A)</button>
         </div>
       </div>
     </div>
 
     <!-- 提前还款计划管理属性弹窗 -->
     <div class="win-dialog-overlay" id="prepayManagerOverlay" style="display: none;" onclick="showPrepayManager(false)">
-      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 420px; max-width: 95%;">
+      <div class="win-dialog win-outset" onclick="event.stopPropagation()" style="width: 440px; max-width: 95%;">
         <div class="win-titlebar">
-          <div class="win-titlebar-title" data-i18n="prepayManagerTitle">提前还款计划管理器</div>
+          <div class="win-titlebar-title">提前还款计划管理器</div>
           <div class="win-titlebar-controls">
             <button class="win-titlebar-btn close-btn" onclick="showPrepayManager(false)">✖</button>
           </div>
         </div>
         
         <div style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
-          <!-- 上半区：当前提前还款计划列表 -->
+          <!-- 已配置列表 -->
           <div class="win-group-box" style="display: flex; flex-direction: column; height: 160px;">
-            <span class="win-group-box-title" data-i18n="groupQuickView">已配置列表</span>
+            <span class="win-group-box-title">已配置提前还款项</span>
             <div class="win-table-container win-inset" style="flex: 1; overflow-y: auto; background: var(--win-box-bg);">
               <table class="win-table" style="width: 100%; font-size: 11px;">
                 <thead>
                   <tr>
-                    <th data-i18n="thPeriod" style="width: 20%;">期数</th>
-                    <th data-i18n="lblPrepayAmount" style="width: 35%;">还款金额</th>
-                    <th data-i18n="lblPrepayMethod" style="width: 30%;">处理方式</th>
-                    <th data-i18n="thPrepayAction" style="width: 15%;">操作</th>
+                    <th style="width: 25%;">期数 (年月)</th>
+                    <th class="cell-num" style="width: 35%;">还款金额</th>
+                    <th style="width: 25%;">处理方式</th>
+                    <th style="width: 15%; text-align: center;">操作</th>
                   </tr>
                 </thead>
                 <tbody id="prepayManagerTableBody"></tbody>
@@ -444,33 +433,35 @@
             </div>
           </div>
           
-          <!-- 下半区：添加新的一笔 -->
+          <!-- 新增提前还款项 -->
           <div class="win-group-box">
-            <span class="win-group-box-title" data-i18n="groupLoanConfig">新增提前还款项</span>
+            <span class="win-group-box-title">新增提前还款项</span>
             <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 0;">
               <div class="win-field-row" style="align-items: center;">
-                <label data-i18n="lblPrepayPeriod" style="width: 75px;">在第几期：</label>
-                <input type="number" id="dialogPrepayPeriod" class="win-input" min="1" step="1" style="width: 80px;">
-                <span class="unit" data-i18n="lblPeriodUnit">期后</span>
+                <label style="width: 80px;">在第几期：</label>
+                <input type="number" id="dialogPrepayPeriod" class="win-input" min="1" step="1" style="width: 80px;" oninput="syncPrepayDateHint()">
+                <span class="unit">期后</span>
+                <span id="dialogPrepayDateHint" style="font-size: 11px; color: var(--win-text-muted); margin-left: 6px;"></span>
               </div>
               <div class="win-field-row" style="align-items: center;">
-                <label data-i18n="lblPrepayAmount" style="width: 75px;">还款金额：</label>
-                <input type="number" id="dialogPrepayAmount" class="win-input" min="0.01" step="any" style="flex: 1;">
-                <span class="unit" data-i18n="unitYuan">元</span>
+                <label style="width: 80px;">还款金额：</label>
+                <input type="number" id="dialogPrepayAmount" class="win-input" min="0.01" step="any" style="flex: 1;" oninput="syncPrepayAmountHint()">
+                <span class="unit">元</span>
               </div>
+              <div id="dialogPrepayAmountHelper" style="font-size: 11px; color: var(--win-text-muted); padding-left: 88px; margin-top: -4px;"></div>
               <div class="win-field-row" style="align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; gap: 15px;">
                   <label class="win-radio-container" style="width: auto;">
                     <input type="radio" name="dialogPrepayMethod" value="shrink" class="win-radio" checked>
-                    <span data-i18n="prepayShrink">缩短期限</span>
+                    <span>缩短期限 (月供不变)</span>
                   </label>
                   <label class="win-radio-container" style="width: auto;">
                     <input type="radio" name="dialogPrepayMethod" value="reduce" class="win-radio">
-                    <span data-i18n="prepayReduce">减少月供</span>
+                    <span>减少月供 (期限不变)</span>
                   </label>
                 </div>
                 <button class="win-btn" onclick="addTempPrepay()" style="padding: 3px 12px; min-width: 80px;">
-                  <span class="win-icon-plus"></span><span data-i18n="btnAddToList">添加到列表(A)</span>
+                  <span class="win-icon-plus"></span><span>添加到列表(A)</span>
                 </button>
               </div>
             </div>
@@ -478,8 +469,8 @@
         </div>
         
         <div class="win-dialog-footer" style="justify-content: flex-end; gap: 6px; padding: 0 10px 10px;">
-          <button class="win-btn" onclick="confirmPrepaySelection()" style="width: 75px;" data-i18n="btnOK">确定</button>
-          <button class="win-btn" onclick="showPrepayManager(false)" style="width: 75px;" data-i18n="btnCancel">取消</button>
+          <button class="win-btn" onclick="confirmPrepaySelection()" style="width: 75px;">确定</button>
+          <button class="win-btn" onclick="showPrepayManager(false)" style="width: 75px;">取消</button>
         </div>
       </div>
     </div>

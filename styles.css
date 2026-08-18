@@ -1,10 +1,11 @@
 /*
- * Windows 98 经典复古样式系统 v2.0
- * 修复布局溢出 + 平板/手机适配 + 深色主题 + 新功能样式
+ * 贷款组合管理器样式系统 v1.5.0
+ * 支持双主题：Windows 98 经典复古 (theme-standard) 与 Google Material 3 现代质感 (theme-material)
+ * 100% 纯原生 Vanilla CSS，零外部 CDN 依赖，支持移动端自适应。
  */
 
 /* ==========================================
-   CSS 变量：亮色主题（默认 Windows 98 经典）
+   CSS 变量：基础与 Windows 98 经典复古主题
    ========================================== */
 :root {
   --win-teal: #008080;
@@ -21,15 +22,14 @@
   --win-gray-light: #c0c0c0;
   --win-dark-shadow: #404040;
   --win-white: #ffffff;
-  --win-box-bg: #ffffff;      /* 引入专用的凹陷组件内部背景色，亮色下为纯白 */
-  --win-text-muted: #808080;  /* 引入专用的辅助说明类文字颜色 */
-  --win-font: "MS Sans Serif", Tahoma, Arial, "SimSun", "宋体", "Songti SC", "STSong", sans-serif;
+  --win-box-bg: #ffffff;
+  --win-text-muted: #606060;
+  --win-font: "MS Sans Serif", Tahoma, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --win-radius: 0px;
 }
 
-
-
 /* ==========================================
-   全局重置
+   全局重置与页面根容器
    ========================================== */
 * {
   box-sizing: border-box;
@@ -44,14 +44,14 @@ body {
   color: var(--win-text);
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   user-select: none;
-  -webkit-font-smoothing: subpixel-antialiased;
-  -moz-osx-font-smoothing: auto;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ==========================================
-   3D 边框系统
+   Windows 98 经典 3D 边框系统
    ========================================== */
 .win-outset {
   border: 2px solid;
@@ -104,14 +104,19 @@ body {
   cursor: not-allowed;
 }
 
+.win-btn-danger {
+  color: #ff0000;
+  font-weight: bold;
+}
+
 /* ==========================================
-   经典输入框
+   输入框与下拉选择框
    ========================================== */
 .win-input, .win-select {
   font-family: var(--win-font);
   font-size: 12px;
-  height: 22px;
-  padding: 2px 4px;
+  height: 24px;
+  padding: 2px 6px;
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
@@ -125,9 +130,28 @@ body {
   color: var(--win-text-disabled);
 }
 
-/* ==========================================
-   经典单选框
-   ========================================== */
+/* 金额大写与万元辅助换算提示胶囊 */
+.win-amount-helper {
+  font-size: 11px;
+  color: #000080;
+  background-color: rgba(0, 0, 128, 0.06);
+  border: 1px solid rgba(0, 0, 128, 0.2);
+  padding: 2px 8px;
+  border-radius: 2px;
+  display: inline-block;
+  font-weight: 500;
+  width: fit-content;
+}
+
+/* 单选框与分段控件 */
+.win-segment-control {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .win-radio-container {
   display: inline-flex;
   align-items: center;
@@ -139,8 +163,8 @@ body {
 .win-radio {
   appearance: none;
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
@@ -156,8 +180,8 @@ body {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   background-color: var(--win-text);
   border-radius: 50%;
 }
@@ -169,6 +193,7 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding-bottom: 28px;
@@ -182,9 +207,7 @@ body {
   min-height: 0;
 }
 
-/* ==========================================
-   窗口标题栏
-   ========================================== */
+/* 窗口标题栏 */
 .win-titlebar {
   background: linear-gradient(90deg, var(--win-blue-dark), var(--win-blue-light));
   color: var(--win-white);
@@ -193,7 +216,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 20px;
+  height: 22px;
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -204,8 +227,47 @@ body {
   align-items: center;
 }
 
+.win-titlebar-title {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.win-titlebar-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.win-titlebar-btn {
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  font-size: 9px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  background-color: var(--win-face);
+  color: var(--win-text);
+  cursor: pointer;
+  outline: none;
+}
+
+.win-titlebar-btn:active {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  padding: 1px 0 0 1px;
+}
+
+.win-titlebar-btn.close-btn {
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+}
+
 /* ==========================================
-   像素图标系统：替代 Emoji，保持 90 年代硬边控件质感
+   像素矢量图标系统 (无外部依赖)
    ========================================== */
 .win-icon-folder,
 .win-icon-file,
@@ -314,7 +376,6 @@ body {
 
 .win-icon-calendar,
 .win-icon-display,
-.win-icon-globe,
 .win-icon-link,
 .win-icon-help,
 .win-icon-chart {
@@ -367,17 +428,6 @@ body {
   border: 1px solid #000080;
 }
 
-.win-icon-globe::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  top: 3px;
-  width: 6px;
-  height: 6px;
-  border: 1px solid #000080;
-  border-radius: 50%;
-}
-
 .win-icon-link::before {
   content: "";
   position: absolute;
@@ -401,47 +451,8 @@ body {
   margin-right: 6px;
 }
 
-.win-titlebar-title {
-  flex-grow: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.win-titlebar-controls {
-  display: flex;
-  gap: 2px;
-}
-
-.win-titlebar-btn {
-  width: 16px;
-  height: 14px;
-  padding: 0;
-  font-size: 9px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid;
-  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
-  background-color: var(--win-face);
-  color: var(--win-text);
-  cursor: pointer;
-  outline: none;
-}
-
-.win-titlebar-btn:active {
-  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  padding: 1px 0 0 1px;
-}
-
-.win-titlebar-btn.close-btn {
-  font-size: 10px;
-  font-family: Arial, sans-serif;
-}
-
 /* ==========================================
-   资源管理器布局
+   资源树形导航与工作区布局
    ========================================== */
 .win-explorer-layout {
   display: flex;
@@ -453,7 +464,7 @@ body {
 }
 
 .win-sidebar-tree {
-  width: 200px;
+  width: 210px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -469,10 +480,11 @@ body {
 .win-tree-item {
   display: flex;
   align-items: center;
-  padding: 2px 4px;
+  padding: 3px 6px;
   cursor: pointer;
   white-space: nowrap;
   gap: 6px;
+  border-radius: var(--win-radius);
 }
 
 .win-tree-item:hover {
@@ -494,22 +506,11 @@ body {
   flex-shrink: 0;
 }
 
-
-.win-tree-add-btn {
+.win-tree-action-btn {
   font-weight: bold;
   color: #000080;
 }
 
-
-
-.win-tree-add-disabled {
-  font-weight: bold;
-  color: var(--win-text-disabled);
-}
-
-/* ==========================================
-   右侧工作区
-   ========================================== */
 .win-workspace {
   flex: 1;
   display: flex;
@@ -528,7 +529,7 @@ body {
 }
 
 /* ==========================================
-   选项卡 (Tab Control)
+   选项卡与参数表单
    ========================================== */
 .win-tab-container {
   display: flex;
@@ -550,19 +551,14 @@ body {
   color: var(--win-text);
   border: 2px solid;
   border-color: var(--win-highlight) var(--win-shadow) var(--win-face) var(--win-highlight);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
   padding: 4px 12px;
   cursor: pointer;
-  font-weight: normal;
-  margin-bottom: -2px;
   outline: none;
   font-size: 12px;
   font-family: var(--win-font);
 }
 
 .win-tab.active {
-  border-color: var(--win-highlight) var(--win-shadow) var(--win-face) var(--win-highlight);
   padding: 5px 14px 6px 14px;
   font-weight: bold;
   margin-top: -2px;
@@ -579,7 +575,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* 关键修复：允许内部滚动，防止 iPad 上删除按钮不可见 */
+  overflow-y: auto;
 }
 
 .win-tab-pane {
@@ -593,9 +589,6 @@ body {
   display: flex;
 }
 
-/* ==========================================
-   表单群组 (Group Box)
-   ========================================== */
 .win-group-box {
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
@@ -642,38 +635,13 @@ body {
   flex-shrink: 0;
 }
 
-/* ==========================================
-   快捷期限选择器
-   ========================================== */
-.win-quick-terms {
+.win-quick-terms, .win-quick-names {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
 }
 
-.win-quick-term-btn {
-  font-family: var(--win-font);
-  font-size: 10px;
-  padding: 2px 6px;
-  background-color: var(--win-face);
-  color: var(--win-text);
-  border: 1px solid;
-  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
-  cursor: pointer;
-  outline: none;
-}
-
-.win-quick-term-btn:active {
-  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  padding: 3px 5px 1px 7px;
-}
-
-.win-quick-term-btn:hover {
-  background-color: var(--win-blue-dark);
-  color: var(--win-white);
-}
-
-.win-quick-name-btn {
+.win-quick-term-btn, .win-quick-name-btn {
   font-family: var(--win-font);
   font-size: 10px;
   padding: 2px 6px;
@@ -686,19 +654,11 @@ body {
   white-space: nowrap;
 }
 
-.win-quick-name-btn:active {
-  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  padding: 3px 5px 1px 7px;
-}
-
-.win-quick-name-btn:hover {
+.win-quick-term-btn:hover, .win-quick-name-btn:hover {
   background-color: var(--win-blue-dark);
   color: var(--win-white);
 }
 
-/* ==========================================
-   操作工具栏
-   ========================================== */
 .win-action-bar {
   margin-top: auto;
   display: flex;
@@ -710,7 +670,47 @@ body {
 }
 
 /* ==========================================
-   汇总面板
+   提前还款省息效益高亮卡片
+   ========================================== */
+.win-savings-card {
+  background: linear-gradient(135deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  padding: 10px 14px;
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 1px 1px 0 var(--win-black);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 12px;
+}
+
+.win-savings-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.win-savings-label {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.win-savings-value {
+  font-size: 16px;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.win-savings-divider {
+  width: 1px;
+  height: 28px;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================
+   汇总面板与指标卡片
    ========================================== */
 .win-summary-grid {
   display: grid;
@@ -720,7 +720,7 @@ body {
 }
 
 .win-summary-card {
-  padding: 7px 9px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -740,9 +740,6 @@ body {
   word-break: break-all;
 }
 
-/* ==========================================
-   图表容器
-   ========================================== */
 .win-chart-panel {
   flex: 1;
   min-height: 220px;
@@ -767,7 +764,7 @@ body {
 }
 
 /* ==========================================
-   表格
+   金融表格与对齐规范
    ========================================== */
 .win-table-container {
   flex: 1;
@@ -792,16 +789,15 @@ body {
   top: 0;
   z-index: 10;
   font-weight: bold;
-  padding: 4px 6px;
+  padding: 4px 8px;
   border-right: 1px solid var(--win-shadow);
   border-bottom: 1px solid var(--win-shadow);
   box-shadow: inset 1px 1px 0 var(--win-highlight);
-  user-select: none;
   white-space: nowrap;
 }
 
 .win-table td {
-  padding: 4px 6px;
+  padding: 4px 8px;
   border-right: 1px dotted #c0c0c0;
   border-bottom: 1px dotted #c0c0c0;
   color: var(--win-text);
@@ -809,12 +805,18 @@ body {
   white-space: nowrap;
 }
 
+.win-table th.cell-num,
+.win-table td.cell-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .win-table tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
 /* ==========================================
-   底部任务栏 (Taskbar)
+   底部任务栏与开始菜单
    ========================================== */
 .win98-taskbar {
   position: fixed;
@@ -871,7 +873,7 @@ body {
 
 .win-task-btn {
   height: 22px;
-  max-width: 150px;
+  max-width: 180px;
   text-align: left;
   justify-content: flex-start;
   padding: 2px 6px;
@@ -907,14 +909,11 @@ body {
   font-weight: bold;
 }
 
-/* ==========================================
-   开始菜单 — 使用 fixed 定位防止父容器裁剪
-   ========================================== */
 .win-start-menu {
   position: fixed;
   bottom: 30px;
   left: 2px;
-  width: 200px;
+  width: 240px;
   background-color: var(--win-face);
   border: 2px solid;
   border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
@@ -974,7 +973,7 @@ body {
 }
 
 /* ==========================================
-   对话框
+   对话框与弹窗
    ========================================== */
 .win-dialog-overlay {
   position: fixed;
@@ -982,7 +981,8 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0,0,0,0.15);
+  height: 100dvh;
+  background-color: rgba(0,0,0,0.25);
   display: none;
   align-items: center;
   justify-content: center;
@@ -994,7 +994,7 @@ body {
 }
 
 .win-dialog {
-  width: 340px;
+  width: 360px;
   max-width: 90vw;
   display: flex;
   flex-direction: column;
@@ -1029,192 +1029,10 @@ body {
   gap: 10px;
 }
 
-/* ==========================================
-   滚动条
-   ========================================== */
-::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
-  background-color: var(--win-face);
-}
-
-::-webkit-scrollbar-track {
-  background: repeating-conic-gradient(var(--win-face) 0% 25%, var(--win-highlight) 0% 50%) 50% / 2px 2px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: var(--win-face);
-  border: 2px solid;
-  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
-}
-
-::-webkit-scrollbar-thumb:active {
-  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-}
-
-/* ==========================================
-   响应式：平板端 (769px - 1024px)
-   ========================================== */
-@media (max-width: 1024px) {
-  .win-sidebar-tree {
-    width: 160px;
-  }
-  .win-chart-panel {
-    min-height: 200px;
-    max-height: 280px;
-  }
-  .win-summary-card .value {
-    font-size: 14px;
-  }
-  .win98-window {
-    margin: 5px;
-  }
-}
-
-/* ==========================================
-   响应式：手机端 (≤768px)
-   ========================================== */
-@media (max-width: 768px) {
-  body {
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
-  }
-  
-  .win98-desktop {
-    height: 100vh;
-    padding-bottom: 28px;
-    overflow: hidden;
-  }
-  
-  .win98-window {
-    margin: 3px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  
-  .win-explorer-layout {
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-  }
-  
-  .win-sidebar-tree {
-    width: 100%;
-    height: 110px; /* 适当压缩贷款树高度，给主内容区留出空间 */
-    flex-shrink: 0;
-    border-bottom: 2px solid var(--win-shadow);
-  }
-  
-  .win-workspace {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .win-tab-content-wrapper {
-    flex: 1;
-    height: auto; /* 清除默认，依靠 flex 撑满 */
-    min-height: 0;
-    overflow-y: auto;
-  }
-  
-  .win-chart-panel {
-    min-height: 200px;
-    max-height: 260px;
-  }
-  
-  .win-table-container {
-    max-height: 300px;
-  }
-
-  /* 增大触控热区 */
-  .win-input, .win-select {
-    height: 32px;
-    font-size: 14px;
-    padding: 4px 8px;
-  }
-  
-  .win-radio {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .win-radio:checked::after {
-    top: 3px;
-    left: 3px;
-    width: 8px;
-    height: 8px;
-  }
-  
-  .win-start-menu-item {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-  
-  .win-btn {
-    padding: 6px 14px;
-    font-size: 13px;
-  }
-  
-  .win-field-row label {
-    width: 72px;
-    font-size: 12px;
-  }
-
-  /*
-   * 详情表单在手机宽度下允许分行，避免快捷按钮把关键数字输入框压缩到只剩一个字符。
-   * 仅给需要完整展示的名称、期限和年月设置内容级最小宽度，其余字段继续弹性填满可用空间。
-   */
-  #tabDetailParams .win-field-row {
-    flex-wrap: wrap;
-  }
-
-  #loanName {
-    flex: 1 1 140px !important;
-    min-width: 120px;
-  }
-
-  .win-quick-names,
-  .win-quick-terms {
-    flex: 1 0 100%;
-    padding-left: 80px;
-  }
-
-  #loanTerm {
-    flex: 1 1 72px !important;
-    min-width: 72px;
-  }
-
-  #loanStartYear {
-    flex: 1 1 84px !important;
-    min-width: 84px;
-  }
-
-  #loanStartMonth {
-    flex: 1 1 56px !important;
-    min-width: 56px;
-  }
-  
-  .win-summary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  }
-  
-  .win-summary-card .value {
-    font-size: 13px;
-  }
-}
-
-/* ==========================================
-   显示属性 (Display Properties) 与预览器
-   ========================================== */
+/* 显示属性预览器 */
 .win-preview-container {
   width: 100%;
-  height: 150px;
+  height: 140px;
   background-color: #000000;
   display: flex;
   align-items: center;
@@ -1225,18 +1043,17 @@ body {
 .win-preview-desktop {
   width: 100%;
   height: 100%;
-  background-color: #008080; /* 默认 98 经典青 */
+  background-color: #008080;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s;
   position: relative;
   overflow: hidden;
 }
 
 .win-preview-window {
   width: 180px;
-  height: 105px;
+  height: 100px;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
@@ -1251,21 +1068,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.win-preview-titlebar-icon {
-  margin-right: 2px;
-}
-
-.win-preview-titlebar-btn {
-  font-size: 8px;
-  width: 10px;
-  height: 10px;
-  border: 1px solid #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 8px;
 }
 
 .win-preview-workspace {
@@ -1294,618 +1096,441 @@ body {
   outline: none;
 }
 
-
-
-/* 局部预览：Vista Aero */
-.win-preview-container.theme-vista .win-preview-desktop {
-  background: radial-gradient(circle at 15% 15%, rgba(38, 124, 139, 0.9) 0%, transparent 65%),
-              radial-gradient(circle at 85% 15%, rgba(140, 42, 78, 0.8) 0%, transparent 55%),
-              radial-gradient(circle at 50% 85%, rgba(30, 82, 142, 1) 0%, transparent 75%),
-              #1d528f;
-  background-size: cover;
+/* 局部预览：Material 3 */
+.win-preview-container.theme-material .win-preview-desktop {
+  background: linear-gradient(135deg, #f0f4f9 0%, #e2e8f0 100%);
 }
-.win-preview-container.theme-vista .win-preview-window {
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.win-preview-container.theme-vista .win-preview-titlebar {
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%);
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  color: #0b1a2d;
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-}
-.win-preview-container.theme-vista .win-preview-titlebar-btn {
-  border-radius: 2px;
-  background: linear-gradient(180deg, #f57f7f 0%, #c01a1a 100%);
-  border-color: #7a1010;
-}
-.win-preview-container.theme-vista .win-preview-workspace {
-  background: rgba(255, 255, 255, 0.65);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-.win-preview-container.theme-vista .win-preview-text {
-  color: #1d2530;
-  font-family: "Segoe UI", sans-serif;
-}
-.win-preview-container.theme-vista .win-preview-btn {
-  background: linear-gradient(180deg, #f2f2f2 0%, #cfcfcf 100%);
-  border: 1px solid #707070;
-  border-radius: 2.5px;
-  color: #1d2530;
-  box-shadow: inset 0 1px 0 #fff;
-}
-
-/* ==========================================
-   Windows Vista Aero 玻璃全局主题类
-   ========================================== */
-body.theme-vista {
-  /* 大升级 3D 极光背景：深邃典雅的蓝绿粉极光交汇，高档质感 */
-  background: 
-    radial-gradient(circle at 10% 15%, rgba(0, 180, 200, 0.45) 0%, transparent 60%),
-    radial-gradient(circle at 90% 10%, rgba(188, 57, 130, 0.35) 0%, transparent 55%),
-    radial-gradient(circle at 50% 85%, rgba(0, 102, 204, 0.65) 0%, transparent 70%),
-    linear-gradient(135deg, #0e1e38 0%, #060b14 100%);
-  background-attachment: fixed;
-  background-size: cover;
-  --win-gray: rgba(230, 240, 250, 0.4);
-  --win-face: rgba(230, 240, 250, 0.5);
-  --win-highlight: rgba(255, 255, 255, 0.75);
-  --win-shadow: rgba(0, 0, 0, 0.18);
-  --win-black: rgba(0, 0, 0, 0.3);
-  --win-text: #1d2530;
-  --win-text-disabled: rgba(100, 110, 120, 0.6);
-  --win-blue-dark: rgba(30, 82, 142, 0.85);
-  --win-blue-light: rgba(38, 124, 139, 0.75);
-  --win-gray-dark: rgba(120, 135, 150, 0.5);
-  --win-gray-light: rgba(245, 250, 255, 0.85);
-  --win-white: #ffffff;
-  --win-box-bg: rgba(255, 255, 255, 0.8);
-  --win-text-muted: #4e5d6c;
-  --win-font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
-  font-family: var(--win-font);
-}
-
-/* 局部元素覆盖：Vista Aero 磨砂高光窗框 */
-body.theme-vista .win-outset {
-  border: 1px solid rgba(255, 255, 255, 0.45);
+.win-preview-container.theme-material .win-preview-window {
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
-  background: rgba(15, 30, 50, 0.4); /* Aero 磨砂透光幽蓝底 */
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 
-    0 12px 36px 0 rgba(0, 0, 0, 0.45), 
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.25);
-  padding: 5px; /* 标志性的厚磨砂玻璃窗框包围感 */
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.win-preview-container.theme-material .win-preview-titlebar {
+  background: #0b57d0;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  color: #ffffff;
+}
+.win-preview-container.theme-material .win-preview-workspace {
+  background: #ffffff;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+.win-preview-container.theme-material .win-preview-text {
+  color: #191c1d;
+  font-family: -apple-system, sans-serif;
+}
+.win-preview-container.theme-material .win-preview-btn {
+  background: #0b57d0;
+  border: none;
+  border-radius: 9999px;
+  color: #ffffff;
 }
 
-body.theme-vista .win-inset {
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.08);
+/* ==========================================================================
+   Google Material 3 (Material You) 现代质感全局主题
+   ========================================================================== */
+body.theme-material {
+  background: #f0f4f9;
+  color: #191c1d;
+  --win-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --win-radius: 12px;
 }
 
-/* 加高标题栏，白色发光文字，Aero高光亮边 */
-body.theme-vista .win-titlebar {
-  background: linear-gradient(180deg, 
-    rgba(255, 255, 255, 0.22) 0%, 
-    rgba(255, 255, 255, 0.08) 50%, 
-    rgba(0, 0, 0, 0.08) 50.1%, 
-    rgba(0, 0, 0, 0.18) 100%);
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
-  color: #ffffff; /* 白色发光字 */
-  height: 30px; /* 加高标题栏 */
-  padding: 0 8px;
-  display: flex;
-  align-items: center;
+/* 主窗口 M3 现代化卡片化 */
+body.theme-material .win-outset {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-material .win-inset {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+body.theme-material .win98-window {
+  margin: 12px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* M3 扁平顶栏 */
+body.theme-material .win-titlebar {
+  background: #ffffff;
+  color: #0041a2;
+  border-bottom: 1px solid #e2e8f0;
+  height: 48px;
+  padding: 0 16px;
+  font-size: 15px;
   font-weight: 600;
+}
+
+body.theme-material .win-titlebar-icon {
+  display: none;
+}
+
+body.theme-material .win-titlebar-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+body.theme-material .win-titlebar-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+body.theme-material .win-titlebar-btn.close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 布局与侧边栏 */
+body.theme-material .win-explorer-layout {
+  background: #f8f9fa;
+  padding: 12px;
+  gap: 12px;
+}
+
+body.theme-material .win-sidebar-tree {
+  width: 230px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+body.theme-material .win-tree-item {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+body.theme-material .win-tree-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body.theme-material .win-tree-item.selected {
+  background: #d1e1fb;
+  color: #0041a2;
+  font-weight: 600;
+}
+
+/* 核心汇总指标卡片 */
+body.theme-material .win-summary-card {
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 14px 16px;
+}
+
+body.theme-material .win-summary-card .label {
   font-size: 12px;
-  /* Vista Aero 特有的白色文字外发光配合深黑色投影 */
-  text-shadow: 
-    0 0 10px rgba(255, 255, 255, 0.7), 
-    0 0 5px rgba(255, 255, 255, 0.5), 
-    0 1px 2px rgba(0, 0, 0, 0.85);
+  color: #64748b;
+  font-weight: 500;
 }
 
-/* 调整标题栏图标的视觉位置 */
-body.theme-vista .win-titlebar-icon {
-  margin-top: 1px;
+body.theme-material .win-summary-card .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b57d0;
+  font-family: inherit;
+  margin-top: 4px;
 }
 
-/* 长方形 3D 悬浮紧凑按钮组 */
-body.theme-vista .win-titlebar-controls {
-  display: flex;
-  gap: 1px; /* 紧贴紧凑排列 */
-  align-items: center;
-  margin-right: -3px; /* 紧贴右侧玻璃边缘 */
-  height: 100%;
+/* M3 Group Box 与卡片 */
+body.theme-material .win-group-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 16px;
 }
 
-body.theme-vista .win-titlebar-btn {
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  border-top: none;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(180deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
-    rgba(255, 255, 255, 0.05) 50%, 
-    rgba(0, 0, 0, 0.2) 50.1%, 
-    rgba(0, 0, 0, 0.35) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
-  width: 26px;
-  height: 18px;
-  margin-top: -6px; /* 向上悬浮贴齐标题栏顶边缘 */
-  cursor: pointer;
-  position: relative;
-  font-size: 0 !important; /* 隐藏原生字符 */
-  color: transparent !important;
-  line-height: 0;
-  transition: all 0.15s ease-in-out;
+body.theme-material .win-group-box-title {
+  position: static;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 12px;
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
 }
 
-body.theme-vista .win-titlebar-btn:hover {
-  background: linear-gradient(180deg, 
-    rgba(255, 255, 255, 0.35) 0%, 
-    rgba(255, 255, 255, 0.15) 50%, 
-    rgba(0, 192, 255, 0.25) 50.1%, 
-    rgba(0, 192, 255, 0.5) 100%);
-  border-color: rgba(0, 120, 215, 0.65);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 6px rgba(0, 192, 255, 0.55);
+/* 提前还款省息效益卡片 (M3 渐变高亮) */
+body.theme-material .win-savings-card {
+  background: linear-gradient(135deg, #0b57d0 0%, #003078 100%);
+  border-radius: 14px;
+  border: none;
+  box-shadow: 0 4px 14px rgba(11, 87, 208, 0.25);
+  padding: 14px 20px;
 }
 
-body.theme-vista .win-titlebar-btn:active {
-  background: linear-gradient(180deg, 
-    rgba(0, 0, 0, 0.4) 0%, 
-    rgba(0, 0, 0, 0.2) 50%, 
-    rgba(0, 120, 215, 0.5) 100%);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+body.theme-material .win-savings-value {
+  font-size: 20px;
+  font-family: inherit;
 }
 
-/* 关闭按钮专属 3D 悬浮高亮红 */
-body.theme-vista .win-titlebar-btn.close-btn {
-  width: 45px; /* 稍宽的长方形 */
-  background: linear-gradient(180deg, 
-    #f88e8e 0%, 
-    #e84848 50%, 
-    #b21e1e 50.1%, 
-    #d82e2e 100%);
-  border-color: rgba(100, 10, 10, 0.7);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.15);
-}
-
-body.theme-vista .win-titlebar-btn.close-btn:hover {
-  background: linear-gradient(180deg, 
-    #ffa8a8 0%, 
-    #ff6868 50%, 
-    #d81e1e 50.1%, 
-    #f03e3e 100%);
-  border-color: rgba(140, 15, 15, 0.85);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 10px rgba(255, 40, 40, 0.75);
-}
-
-body.theme-vista .win-titlebar-btn.close-btn:active {
-  background: linear-gradient(180deg, 
-    #9e1414 0%, 
-    #7e0e0e 50%, 
-    #c01a1a 100%);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.65);
-}
-
-/* 数量查询：只有在 3 个控制按钮的主窗口中，第一个按钮绘制最小化 (底线) */
-body.theme-vista .win-titlebar-controls button:first-child:nth-last-child(3)::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 5px;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 2px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-}
-
-/* 数量查询：只有在 3 个控制按钮的主窗口中，第二个按钮绘制最大化 (中空框) */
-body.theme-vista .win-titlebar-controls button:nth-child(2):nth-last-child(2)::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  border: 2px solid #ffffff;
-  border-top-width: 3px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-}
-
-/* 关闭按钮：无论是主窗口还是弹窗，均渲染为白叉 */
-body.theme-vista .win-titlebar-controls button.close-btn::before,
-body.theme-vista .win-titlebar-controls button.close-btn::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 1.5px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-}
-body.theme-vista .win-titlebar-controls button.close-btn::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-body.theme-vista .win-titlebar-controls button.close-btn::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-body.theme-vista .win-btn {
-  border: 1px solid #707070;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #f3f3f3 0%, #ebebeb 50%, #dddddd 50.1%, #cfcfcf 100%);
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.08);
-  padding: 4px 14px;
+/* 按钮与输入框 */
+body.theme-material .win-btn {
+  border: none;
+  border-radius: 9999px;
+  background: #0b57d0;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  padding: 6px 16px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.2s;
 }
 
-body.theme-vista .win-btn:hover:not(:disabled) {
-  border-color: #3c7fb1;
-  background: linear-gradient(180deg, #eaf6fd 0%, #d9f0fc 50%, #bee6fd 50.1%, #a7d9f5 100%);
-  box-shadow: inset 0 1px 0 #fff, 0 0 4px rgba(60, 127, 177, 0.4);
+body.theme-material .win-btn:hover:not(:disabled) {
+  background: #0842a0;
+  box-shadow: 0 2px 6px rgba(11, 87, 208, 0.3);
 }
 
-body.theme-vista .win-btn:active:not(:disabled) {
-  border-color: #2c628b;
-  background: linear-gradient(180deg, #e0f3fc 0%, #c4e8fa 50%, #9dd5f3 50.1%, #79bee7 100%);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
-  padding: 4px 14px;
+body.theme-material .win-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
-body.theme-vista .win-input, 
-body.theme-vista .win-select {
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.85);
-  height: 24px;
+body.theme-material .win-btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+body.theme-material .win-btn-danger:hover:not(:disabled) {
+  background: #fca5a5;
+  color: #991b1b;
+}
+
+body.theme-material .win-input,
+body.theme-material .win-select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  height: 32px;
+  padding: 4px 10px;
+  box-shadow: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-body.theme-vista .win-input:focus, 
-body.theme-vista .win-select:focus {
-  border-color: #3c7fb1;
-  box-shadow: 0 0 4px rgba(60, 127, 177, 0.3);
+body.theme-material .win-input:focus,
+body.theme-material .win-select:focus {
+  border-color: #0b57d0;
+  box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.15);
 }
 
-body.theme-vista .win-tab-content-wrapper {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 0 0 5px 5px;
-  background: rgba(242, 246, 250, 0.96);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-body.theme-vista .win-tabs {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-body.theme-vista .win-tab {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  background-color: rgba(240, 245, 250, 0.5);
-  margin-bottom: -1px;
-}
-
-body.theme-vista .win-tab.active {
-  background-color: rgba(255, 255, 255, 0.65);
-  border-color: rgba(0, 0, 0, 0.12);
-  border-bottom-color: transparent;
-  font-weight: bold;
-}
-
-body.theme-vista .win-group-box {
-  border: 1px solid rgba(0, 0, 0, 0.12);
+body.theme-material .win-amount-helper {
+  background: #d1e1fb;
+  color: #0041a2;
+  border: none;
   border-radius: 6px;
-  background: rgba(248, 251, 254, 0.9);
-  padding: 10px 12px;
+  padding: 4px 10px;
 }
 
-body.theme-vista .win-group-box-title {
-  position: relative;
-  top: 0;
-  left: 0;
-  background-color: transparent;
-  color: #1e528e;
-  display: block;
-  font-weight: bold;
-  padding: 0;
-  margin-bottom: 8px;
+/* 快捷芯片按钮 */
+body.theme-material .win-quick-term-btn,
+body.theme-material .win-quick-name-btn {
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 10px;
   font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-body.theme-vista .win-summary-card {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
-  background: rgba(244, 248, 252, 0.94);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+body.theme-material .win-quick-term-btn:hover,
+body.theme-material .win-quick-name-btn:hover {
+  background: #d1e1fb;
+  color: #0041a2;
+  border-color: #b2c5ff;
 }
 
-body.theme-vista .win-summary-card .value {
-  color: #1e528e;
+/* 选项卡 (Tabs) */
+body.theme-material .win-tabs {
+  border-bottom: 1px solid #e2e8f0;
+  padding-left: 0;
+  gap: 6px;
 }
 
-body.theme-vista .win-table th {
-  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: none;
+body.theme-material .win-tab {
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #64748b;
+  padding: 6px 16px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+body.theme-material .win-tab.active {
+  background: #d1e1fb;
+  color: #0041a2;
   font-weight: 600;
+  margin-top: 0;
 }
 
-body.theme-vista .win-table td {
-  border-right: 1px solid rgba(0, 0, 0, 0.03);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+body.theme-material .win-tab-content-wrapper {
+  background: #ffffff;
+  border: none;
+  box-shadow: none;
+  padding: 12px 0;
 }
 
-body.theme-vista .win-table tr:nth-child(even) {
-  background-color: rgba(240, 245, 250, 0.3);
-}
-
-body.theme-vista .win-chart-fallback {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 5px;
-  background: rgba(248, 251, 254, 0.94);
-  color: #4e5d6c;
-}
-
-/* Vista 任务栏与开始按钮适配 */
-body.theme-vista .win98-taskbar {
-  background: rgba(10, 15, 25, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  height: 34px; /* 让 Vista 任务栏稍厚一些，更能包容圆形 Orb */
-}
-
-body.theme-vista .win-task-items {
-  margin-left: 12px;
-}
-
-body.theme-vista .win-task-btn {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  height: 26px;
+/* 表格 (Table) */
+body.theme-material .win-table-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   box-shadow: none;
 }
 
-body.theme-vista .win-task-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
+body.theme-material .win-table th {
+  background: #f8fafc;
+  color: #475569;
+  border-right: none;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: none;
+  padding: 8px 12px;
 }
 
-body.theme-vista .win-task-btn.active {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
-  padding: 2px 6px;
+body.theme-material .win-table td {
+  border-right: none;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 8px 12px;
+  font-family: inherit;
 }
 
-body.theme-vista .win-start-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
-  background: radial-gradient(circle at 50% 30%, #3085d6 0%, #0c3e7b 70%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  cursor: pointer;
-  position: relative;
-  bottom: 4px;
-  transition: all 0.3s cubic-bezier(0.1, 0.8, 0.2, 1);
-  flex-shrink: 0;
+body.theme-material .win-table tr:hover {
+  background-color: #f8fafc;
 }
 
-body.theme-vista .win-start-btn:hover {
-  box-shadow: 0 0 14px rgba(48, 133, 214, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  background: radial-gradient(circle at 50% 30%, #4da7ff 0%, #104f9b 70%);
+/* 任务栏与弹窗 */
+body.theme-material .win98-taskbar {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+  height: 36px;
 }
 
-/* 隐藏 Vista 开始按钮中的“开始”文字，仅保留圆形 Logo 徽标 */
-body.theme-vista .win-start-btn span:not(.win-start-logo) {
-  display: none !important;
+body.theme-material .win98-desktop {
+  padding-bottom: 36px;
 }
 
-body.theme-vista .win-start-logo {
-  /* 用 CSS 绘制圆形 orb 内部经典的 Vista 蓝绿黄红徽标 */
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: conic-gradient(
-    #ff4b4b 0deg 90deg, 
-    #4bff4b 90deg 180deg, 
-    #4b4bff 180deg 270deg, 
-    #ffff4b 270deg 360deg
-  );
-  box-shadow: inset 0 0 4px rgba(0,0,0,0.3);
-  filter: saturate(1.2);
-}
-
-body.theme-vista .win-start-logo::after {
-  display: none; /* 去除 Win98 的伪元素 */
-}
-
-body.theme-vista .win-systray {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+body.theme-material .win-start-btn {
+  background: #0b57d0;
   color: #ffffff;
+  border-radius: 9999px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 3px 12px;
   height: 26px;
 }
 
-body.theme-vista .win-start-menu {
-  background: rgba(20, 25, 35, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  bottom: 40px;
+body.theme-material .win-start-logo {
+  border-radius: 50%;
 }
 
-body.theme-vista .win-start-menu-sidebar {
-  /* 去除 98 的竖向蓝条，改为 Vista 优雅的左侧面板 */
-  background: linear-gradient(180deg, rgba(30, 82, 142, 0.5), rgba(10, 15, 25, 0.8));
-  border-radius: 5px 0 0 5px;
-  font-size: 0; /* 彻底消隐原有的 Windows 98 文本 */
-  color: transparent;
-  position: relative;
-  width: 24px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  /* 彻底消除 Win98 原有的 transform 旋转叠加影响，防止子元素发生定位错乱 */
-  transform: none !important;
-  writing-mode: horizontal-tb !important;
+body.theme-material .win-dialog {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  background: #ffffff;
 }
 
-/* 在 Vista 模式下，将侧边栏的装饰文本升级为 Windows Vista 旋转字样 */
-body.theme-vista .win-start-menu-sidebar::after {
-  content: "Windows Vista";
-  font-size: 11px;
-  font-weight: bold;
-  color: rgba(255, 255, 255, 0.65);
-  white-space: nowrap;
-  position: absolute;
-  bottom: 52px; /* 居中放置在 Vista 侧栏的垂直高度 */
-  left: 50%;
-  transform: translateX(-50%) rotate(-90deg); /* 逆时针旋转90度，让文字从底向上、字头朝左正确显示 */
-  transform-origin: center;
-  text-shadow: 0 0 8px rgba(255,255,255,0.3);
-  font-family: "Segoe UI", Arial, sans-serif;
-  letter-spacing: 0.5px;
+body.theme-material .win-start-menu {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  background: #ffffff;
+  bottom: 42px;
 }
 
-body.theme-vista .win-start-menu-item {
-  color: #eeeeee;
-  border-radius: 3px;
+body.theme-material .win-start-menu-sidebar {
+  background: linear-gradient(180deg, #0b57d0, #0041a2);
+}
+
+body.theme-material .win-start-menu-item {
+  border-radius: 8px;
   margin: 1px 4px;
 }
 
-body.theme-vista .win-start-menu-item:hover {
-  background: linear-gradient(90deg, rgba(48, 133, 214, 0.8) 0%, rgba(48, 133, 214, 0.3) 100%);
-  color: #ffffff;
-}
-
-body.theme-vista .win-start-menu-divider {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-body.theme-vista .win-dialog {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  background: rgba(235, 242, 250, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-}
-
-body.theme-vista .win-dialog-body {
-  color: #1d2530;
-}
-
-/* Vista 移动端安全适配覆盖 */
-@media (max-width: 768px) {
-  body.theme-vista .win-outset {
-    border-radius: 4px; /* 在移动端稍微减小圆角，显得更加紧凑 */
-  }
-  body.theme-vista .win-sidebar-tree {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  }
-  body.theme-vista .win-start-btn {
-    bottom: 0px; /* 移动端不要悬浮得太突兀 */
-  }
-  body.theme-vista .win98-taskbar {
-    height: 40px; /* 给移动端留出充足的触控条厚度 */
-  }
-  body.theme-vista .win98-desktop {
-    padding-bottom: 40px; /* 对应 Vista 任务栏在移动端的 40px 高度 */
-  }
+body.theme-material .win-start-menu-item:hover {
+  background: #f1f5f9;
+  color: #0b57d0;
 }
 
 /* ==========================================
-   Windows Vista Aero 细节体验大升级
+   响应式：移动端与平板端深度适配
    ========================================== */
-
-/* 1. Vista Aero 磨砂滚动条定制 */
-body.theme-vista ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-body.theme-vista ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 5px;
-}
-body.theme-vista ::-webkit-scrollbar-thumb {
-  background: rgba(30, 82, 142, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 5px;
-  transition: background 0.15s;
-}
-body.theme-vista ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 192, 255, 0.5);
-  box-shadow: 0 0 6px rgba(0, 192, 255, 0.5);
-}
-
-/* 2. Vista Aero 弹窗与开始菜单 3D 渐变动画 */
-@keyframes vistaFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes vistaScaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-@keyframes vistaStartMenuIn {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-body.theme-vista .win-dialog-overlay {
-  animation: vistaFadeIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1);
-}
-body.theme-vista .win-dialog {
-  animation: vistaScaleIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1);
-  transform-origin: center;
-}
-body.theme-vista .win-start-menu.show {
-  animation: vistaStartMenuIn 0.18s cubic-bezier(0.1, 0.9, 0.2, 1);
-}
-
-/* 3. Vista Aero 禁用按钮样式重塑 */
-body.theme-vista .win-btn:disabled {
-  background: rgba(200, 210, 220, 0.2);
-  color: rgba(100, 110, 120, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  text-shadow: none;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-/* 4. Vista Aero 弹窗标题栏切角防溢出 */
-body.theme-vista .win-dialog .win-titlebar {
-  border-top-left-radius: 7px;
-  border-top-right-radius: 7px;
+@media (max-width: 768px) {
+  body {
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+  }
+  
+  .win98-desktop {
+    height: 100vh;
+    height: 100dvh;
+    padding-bottom: 32px;
+  }
+  
+  .win98-window {
+    margin: 4px;
+  }
+  
+  .win-explorer-layout {
+    flex-direction: column;
+  }
+  
+  .win-sidebar-tree {
+    width: 100%;
+    height: 120px;
+    flex-shrink: 0;
+  }
+  
+  .win-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .win-field-row {
+    flex-wrap: wrap;
+  }
+  
+  .win-field-row label {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .win-input, .win-select {
+    height: 32px;
+    font-size: 13px;
+  }
+  
+  .win-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
 }

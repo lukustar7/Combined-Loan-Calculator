@@ -2,20 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  DEFAULT_MORTGAGE_COMBO,
   MAX_LOANS,
   MAX_LOAN_AMOUNT,
   MAX_LOAN_TERM_MONTHS,
+  PALETTE_20,
   aggregateLoanPortfolio,
+  calculatePrepaymentSavings,
   calculateSingleLoan,
   getAnnualAggregatedData,
   getMonthYearOffset,
+  numberToChineseUppercase,
   sanitizeLoan,
   sanitizeLoans
 } from '../src/loan-engine.js';
 
 /**
  * 财务公式会产生正常的浮点尾差，断言时只允许指定范围内的误差。
- * 这比把所有结果先四舍五入更严格，可以发现本金没有真正结清的问题。
  */
 function assertClose(actual, expected, tolerance = 1e-7) {
   assert.ok(
@@ -141,6 +144,39 @@ test('提前还款的缩短期限和减少月供采用不同后续策略', () =>
   assert.ok(reduce.reduce((sum, row) => sum + row.interest, 0) < baseline.reduce((sum, row) => sum + row.interest, 0));
   assertClose(shrink.reduce((sum, row) => sum + row.principal, 0), 100_000);
   assertClose(reduce.reduce((sum, row) => sum + row.principal, 0), 100_000);
+});
+
+test('提前还款省息效益计算准确评估节省利息与缩短月数', () => {
+  const loanWithShrink = createLoan({
+    amount: 1_000_000,
+    rate: 3.5,
+    term: 360,
+    prepayments: [{ period: 24, amount: 200_000, method: 'shrink' }]
+  });
+  const savings = calculatePrepaymentSavings(loanWithShrink);
+
+  assert.ok(savings.savedInterest > 100_000, '提前还款20万应节省可观利息');
+  assert.ok(savings.savedMonths > 50, '缩短期限模式应缩短较多月数');
+  assert.equal(savings.originalTerm, 360);
+  assert.ok(savings.actualTerm < 360);
+  assertClose(savings.savedInterest, savings.originalTotalInterest - savings.actualTotalInterest);
+});
+
+test('金额转中文大写算法精准转换各量级财务金额', () => {
+  assert.equal(numberToChineseUppercase(0), '零元整');
+  assert.equal(numberToChineseUppercase(1500000), '壹佰伍拾万元整');
+  assert.equal(numberToChineseUppercase(800000), '捌拾万元整');
+  assert.equal(numberToChineseUppercase(1234567.89), '壹佰贰拾叁万肆仟伍佰陆拾柒元捌角玖分');
+  assert.equal(numberToChineseUppercase(1000500.5), '壹佰万零伍佰元伍角整');
+  assert.equal(numberToChineseUppercase(100000000), '壹亿元整');
+});
+
+test('20色调色板与房贷组合出厂模板完备可用', () => {
+  assert.equal(PALETTE_20.length, 20);
+  assert.ok(PALETTE_20.every(item => item.fill && item.border && item.m3Fill && item.m3Border));
+  assert.equal(DEFAULT_MORTGAGE_COMBO.length, 2);
+  assert.equal(DEFAULT_MORTGAGE_COMBO[0].name, '公积金房贷');
+  assert.equal(DEFAULT_MORTGAGE_COMBO[1].name, '商业房贷');
 });
 
 test('组合汇总正确处理错峰贷款和尚未开始的本金', () => {

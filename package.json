@@ -1,9 +1,9 @@
 {
   "name": "combined-loan-calculator",
-  "version": "2.2.2",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
-  "description": "纯静态多笔贷款组合计算器",
+  "description": "纯静态多笔贷款组合合并计算器",
   "scripts": {
     "build": "node --check app.js && node --check src/loan-engine.js && node scripts/validate-static-app.js",
     "test": "node --test",

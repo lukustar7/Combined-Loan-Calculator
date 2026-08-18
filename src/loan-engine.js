@@ -1,7 +1,7 @@
 /**
  * 贷款计算领域核心。
  *
- * 本文件只处理数据清洗和数学计算，不读取 DOM、LocalStorage、语言或主题状态。
+ * 本文件只处理数据清洗和数学计算，不读取 DOM、LocalStorage 或主题状态。
  * 保持“纯计算”边界后，浏览器页面和自动化测试会共同调用同一套公式，避免两套逻辑逐渐偏离。
  */
 
@@ -18,20 +18,73 @@ export const MAX_LOAN_ID_LENGTH = 48;
 const BALANCE_EPSILON = 1e-8;
 
 /**
- * 核心模块的兜底贷款。
- * 页面可以通过 options.defaultLoan 传入自己的默认值，因此这里不会反向依赖界面层。
+ * 核心模块的兜底单笔贷款。
  */
 export const DEFAULT_LOAN = Object.freeze({
   id: 'loan_1',
-  name: '贷款 1',
+  name: '商业房贷 1',
   amount: 1_000_000,
-  rate: 3.5,
+  rate: 3.15,
   method: 'ACPI',
   term: 360,
   startYear: 2026,
-  startMonth: 6,
+  startMonth: 8,
   prepayments: []
 });
+
+/**
+ * 典型房贷组合（公积金 + 商业贷款）出厂模板。
+ */
+export const DEFAULT_MORTGAGE_COMBO = Object.freeze([
+  {
+    id: 'loan_gjj',
+    name: '公积金房贷',
+    amount: 800_000,
+    rate: 2.85,
+    method: 'ACPI',
+    term: 360,
+    startYear: 2026,
+    startMonth: 8,
+    prepayments: []
+  },
+  {
+    id: 'loan_comm',
+    name: '商业房贷',
+    amount: 1_200_000,
+    rate: 3.15,
+    method: 'ACPI',
+    term: 360,
+    startYear: 2026,
+    startMonth: 8,
+    prepayments: []
+  }
+]);
+
+/**
+ * 20 种高对比度复古与现代通用调色板，彻底防止多笔贷款堆叠图同色粘连。
+ */
+export const PALETTE_20 = Object.freeze([
+  { fill: '#000080', border: '#000050', m3Fill: '#0b57d0', m3Border: '#0041a2' }, // 经典微软深蓝 / M3 极光蓝
+  { fill: '#008000', border: '#005000', m3Fill: '#146c2e', m3Border: '#0b5020' }, // 森林绿 / M3 翡翠绿
+  { fill: '#800000', border: '#500000', m3Fill: '#ba1a1a', m3Border: '#93000a' }, // 铁锈红 / M3 砖红
+  { fill: '#800080', border: '#500050', m3Fill: '#6750a4', m3Border: '#4f378b' }, // 紫色 / M3 深度紫
+  { fill: '#008080', border: '#005050', m3Fill: '#006874', m3Border: '#004f58' }, // 青绿 / M3 蓝青
+  { fill: '#800000', border: '#505000', m3Fill: '#7a5900', m3Border: '#5d4300' }, // 暗金泥黄 / M3 琥珀
+  { fill: '#1b365d', border: '#0d1b2f', m3Fill: '#4a6572', m3Border: '#344955' }, // 藏青灰
+  { fill: '#b33939', border: '#801e1e', m3Fill: '#c05621', m3Border: '#9c4221' }, // 珊瑚朱红
+  { fill: '#218c74', border: '#145a4a', m3Fill: '#2e7d32', m3Border: '#1b5e20' }, // 薄荷深绿
+  { fill: '#8c1464', border: '#5a0a3e', m3Fill: '#9c27b0', m3Border: '#7b1fa2' }, // 玫瑰品红
+  { fill: '#2c2c54', border: '#181830', m3Fill: '#3f51b5', m3Border: '#283593' }, // 极夜蓝靛
+  { fill: '#aa6c39', border: '#6e4420', m3Fill: '#d97706', m3Border: '#b45309' }, // 铜棕金
+  { fill: '#10ac84', border: '#0a6c52', m3Fill: '#059669', m3Border: '#047857' }, // 亮绿松石
+  { fill: '#3742fa', border: '#1f2596', m3Fill: '#2563eb', m3Border: '#1d4ed8' }, // 钴蓝
+  { fill: '#ff4757', border: '#b8202d', m3Fill: '#e11d48', m3Border: '#be123c' }, // 茜红
+  { fill: '#70a1ff', border: '#3a66bf', m3Fill: '#0284c7', m3Border: '#0369a1' }, // 晴空蓝
+  { fill: '#2ed573', border: '#188243', m3Fill: '#16a34a', m3Border: '#15803d' }, // 翠叶绿
+  { fill: '#ffa502', border: '#b87400', m3Fill: '#ea580c', m3Border: '#c2410c' }, // 暖橙
+  { fill: '#57606f', border: '#2f3542', m3Fill: '#475569', m3Border: '#334155' }, // 铁板灰
+  { fill: '#5352ed', border: '#292896', m3Fill: '#7c3aed', m3Border: '#6d28d9' }  // 鸢尾蓝紫
+]);
 
 /**
  * 将外部输入转换为有限数字。
@@ -45,7 +98,6 @@ export function toFiniteNumber(value, fallback = 0) {
 
 /**
  * 把数字限制在业务允许的闭区间内。
- * HTML 的 min/max 只约束正常手输，这一层还负责拦截旧缓存和控制台注入的异常值。
  */
 export function clampNumber(value, min, max, fallback = min) {
   const numericValue = toFiniteNumber(value, fallback);
@@ -114,8 +166,7 @@ export function sanitizePrepayments(rawPrepayments, loanTerm = MAX_LOAN_TERM_MON
 }
 
 /**
- * 清洗一笔贷款并迁移旧版单次提前还款字段。
- * options 让页面按当前语言提供默认名称，同时保持核心模块不感知国际化状态。
+ * 清洗一笔贷款并兼容旧版单次提前还款字段。
  */
 export function sanitizeLoan(rawLoan, index = 0, options = {}) {
   const safeIndex = Math.max(0, Math.trunc(index));
@@ -129,7 +180,7 @@ export function sanitizeLoan(rawLoan, index = 0, options = {}) {
   const term = clampInteger(source.term, 0, MAX_LOAN_TERM_MONTHS, fallbackLoan.term);
   const prepayments = sanitizePrepayments(source.prepayments, term);
 
-  // 兼容 2.2.0 之前的单次提前还款字段；迁移结果统一写入 prepayments 数组。
+  // 兼容旧版单次提前还款字段
   const oldPeriod = clampInteger(source.prepayPeriod, 1, MAX_LOAN_TERM_MONTHS, 0);
   const oldAmount = clampNumber(source.prepayAmount, 0, MAX_LOAN_AMOUNT, 0);
   if (oldPeriod > 0 && oldAmount > 0 && (term <= 0 || oldPeriod < term)) {
@@ -158,7 +209,7 @@ export function sanitizeLoan(rawLoan, index = 0, options = {}) {
 }
 
 /**
- * 修复重复 ID，并确保追加序号后仍不超过 ID 长度上限。
+ * 修复重复 ID。
  */
 function ensureUniqueLoanIds(sanitizedLoans) {
   const usedIds = new Set();
@@ -181,7 +232,6 @@ function ensureUniqueLoanIds(sanitizedLoans) {
 
 /**
  * 清洗贷款数组。
- * 非数组、空数组会恢复默认贷款；这是页面启动和“清空数据”流程需要的既有行为。
  */
 export function sanitizeLoans(rawLoans, options = {}) {
   const configuredDefaults = Array.isArray(options.defaultLoans) && options.defaultLoans.length > 0
@@ -189,7 +239,7 @@ export function sanitizeLoans(rawLoans, options = {}) {
     : [DEFAULT_LOAN];
   const fallbackOptions = {
     defaultLoan: configuredDefaults[0],
-    defaultNamePrefix: options.defaultNamePrefix
+    defaultNamePrefix: options.defaultNamePrefix || '贷款'
   };
 
   const sanitizeDefaults = () => ensureUniqueLoanIds(
@@ -233,7 +283,6 @@ function calculateAnnuityPayment(principal, monthlyRate, term) {
 
 /**
  * 生成一笔贷款的逐月还款计划。
- * 提前还款发生在当期常规还款之后：shrink 保持月供并缩短期限，reduce 保持期限并降低后续月供。
  */
 export function calculateSingleLoan(rawLoan) {
   const loan = sanitizeLoan(rawLoan, 0);
@@ -254,7 +303,6 @@ export function calculateSingleLoan(rawLoan) {
       if (remainingPrincipal <= BALANCE_EPSILON) break;
 
       let interest = remainingPrincipal * monthlyRate;
-      // 极高利率和超长期限下，理论首期本金可能小于浮点精度；差值若出现微小负数必须归零。
       let principal = Math.max(0, monthlyRepayment - interest);
       let extraPrepay = 0;
       let isLastPeriod = false;
@@ -330,7 +378,7 @@ export function calculateSingleLoan(rawLoan) {
 }
 
 /**
- * 统一创建还款明细行，保证两种还款方式输出完全相同的数据结构。
+ * 统一创建还款明细行。
  */
 function createScheduleRow(loan, period, payment, principal, interest, remaining, prepay) {
   const date = getMonthYearOffset(loan.startYear, loan.startMonth, period - 1);
@@ -348,8 +396,131 @@ function createScheduleRow(loan, period, payment, principal, interest, remaining
 }
 
 /**
+ * 计算提前还款的综合省息效益与缩短月数。
+ */
+export function calculatePrepaymentSavings(rawLoan) {
+  const loan = sanitizeLoan(rawLoan, 0);
+  if (!loan || loan.amount <= 0 || loan.term <= 0) {
+    return {
+      savedInterest: 0,
+      savedMonths: 0,
+      originalTotalInterest: 0,
+      actualTotalInterest: 0,
+      originalTerm: 0,
+      actualTerm: 0
+    };
+  }
+
+  const baselineLoan = { ...loan, prepayments: [] };
+  const baselineSchedule = calculateSingleLoan(baselineLoan);
+  const actualSchedule = calculateSingleLoan(loan);
+
+  const originalTotalInterest = baselineSchedule.reduce((sum, r) => sum + r.interest, 0);
+  const actualTotalInterest = actualSchedule.reduce((sum, r) => sum + r.interest, 0);
+  const savedInterest = Math.max(0, originalTotalInterest - actualTotalInterest);
+
+  const originalTerm = baselineSchedule.length;
+  const actualTerm = actualSchedule.length;
+  const savedMonths = Math.max(0, originalTerm - actualTerm);
+
+  return {
+    savedInterest,
+    savedMonths,
+    originalTotalInterest,
+    actualTotalInterest,
+    originalTerm,
+    actualTerm
+  };
+}
+
+/**
+ * 将数字转换为人民币大写汉字。
+ * 遵循银行财务规范：例如 1500000 -> 壹佰伍拾万元整。
+ */
+export function numberToChineseUppercase(value) {
+  const num = toFiniteNumber(value, 0);
+  if (num <= 0) return '零元整';
+  if (num > MAX_LOAN_AMOUNT) return '金额超限';
+
+  const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+  const radices = ['', '拾', '佰', '仟'];
+  const bigRadices = ['', '万', '亿', '万亿'];
+
+  const totalFen = Math.round((num + Number.EPSILON) * 100);
+  const yuan = Math.floor(totalFen / 100);
+  const jiao = Math.floor((totalFen % 100) / 10);
+  const fen = totalFen % 10;
+
+  let result = '';
+
+  if (yuan > 0) {
+    let strYuan = String(yuan);
+    let len = strYuan.length;
+    let sectionCount = Math.ceil(len / 4);
+
+    for (let i = 0; i < sectionCount; i++) {
+      let sectionLen = (len % 4 === 0) ? 4 : (len % 4);
+      if (i > 0) sectionLen = 4;
+      let sectionStart = (i === 0) ? 0 : (len % 4 === 0 ? i * 4 : (len % 4) + (i - 1) * 4);
+      let section = strYuan.slice(sectionStart, sectionStart + sectionLen);
+      let sectionUnit = bigRadices[sectionCount - 1 - i];
+
+      let sectionStr = '';
+      let hasNonZero = false;
+      let prevZero = false;
+
+      for (let j = 0; j < section.length; j++) {
+        let digit = Number(section[j]);
+        let pos = section.length - 1 - j;
+        if (digit === 0) {
+          prevZero = true;
+        } else {
+          if (prevZero && hasNonZero) {
+            sectionStr += digits[0];
+          }
+          sectionStr += digits[digit] + radices[pos];
+          hasNonZero = true;
+          prevZero = false;
+        }
+      }
+
+      if (hasNonZero) {
+        if (i > 0 && Number(section[0]) === 0) {
+          result += digits[0];
+        }
+        result += sectionStr + sectionUnit;
+      }
+    }
+    result += '元';
+  }
+
+  if (jiao === 0 && fen === 0) {
+    result += '整';
+  } else {
+    if (jiao > 0) {
+      result += digits[jiao] + '角';
+    } else if (yuan > 0) {
+      result += '零';
+    }
+    if (fen > 0) {
+      result += digits[fen] + '分';
+    } else if (jiao > 0) {
+      result += '整';
+    }
+  }
+
+  result = result
+    .replace(/零+/g, '零')
+    .replace(/零万/g, '万')
+    .replace(/零亿/g, '亿')
+    .replace(/亿万/g, '亿零')
+    .replace(/零元/, '元');
+
+  return result || '零元整';
+}
+
+/**
  * 将金额转换为“分”后比较。
- * 金额上限与贷款数量上限共同保证结果仍处在 JavaScript 安全整数范围内。
  */
 function toMinorUnits(amount) {
   return Math.round((amount + Number.EPSILON) * 100);
@@ -357,7 +528,6 @@ function toMinorUnits(amount) {
 
 /**
  * 合并多笔贷款到统一自然月时间轴。
- * 返回值同时包含页面汇总指标和图表/表格需要的逐月数据。
  */
 export function aggregateLoanPortfolio(rawLoans) {
   if (!Array.isArray(rawLoans) || rawLoans.length === 0) {
@@ -416,7 +586,6 @@ export function aggregateLoanPortfolio(rawLoans) {
       }
     });
 
-    // 按“分”判断相等金额；相同月供保留最早月份，避免浮点尾差把峰值推到最后一期。
     const paymentMinor = toMinorUnits(payment);
     if (paymentMinor > peakPaymentMinor) {
       peakPaymentMinor = paymentMinor;
@@ -456,7 +625,7 @@ export function aggregateLoanPortfolio(rawLoans) {
 }
 
 /**
- * 构造稳定的空组合结果，页面无需为缺字段单独分支。
+ * 构造稳定的空组合结果。
  */
 function createEmptyPortfolioResult() {
   return {
@@ -475,7 +644,6 @@ function createEmptyPortfolioResult() {
 
 /**
  * 将月度组合数据汇总为年度图表数据。
- * activeLoanNames 保留原始名称数组，贷款名包含逗号时也不会被错误拆成多笔贷款。
  */
 export function getAnnualAggregatedData(monthlyData) {
   if (!Array.isArray(monthlyData) || monthlyData.length === 0) return [];
