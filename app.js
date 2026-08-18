@@ -235,9 +235,7 @@ function renderTrendChart(months, aggregatedData) {
   let isStacked = (currentChartTypeMode === 'stacked');
 
   if (currentChartTypeMode === 'trend') {
-    // ==========================================
-    // 模式 A：单笔独立走势对比 (不堆叠，横线/斜线真实反映)
-    // ==========================================
+    // 模式 A：单笔独立走势对比 (不堆叠，横线/斜线精准反映)
     datasets = loans.map((loan, index) => {
       const colorInfo = PALETTE_20[index % PALETTE_20.length];
       const dataPoints = aggregatedData.map(row => (row.breakdown ? (row.breakdown[loan.id] || 0) : 0));
@@ -255,11 +253,10 @@ function renderTrendChart(months, aggregatedData) {
         borderWidth: 2,
         pointRadius: months.length > 80 ? 0 : 2,
         pointHoverRadius: 5,
-        tension: 0 // 纯金融折线，保持精准形态
+        tension: 0
       };
     });
 
-    // 如果有多笔贷款，额外追加一条“合并总月供”曲线
     if (loans.length > 1) {
       const totalPayments = aggregatedData.map(row => row.payment || 0);
       const totalCol = currentTheme === 'material' ? '#0041a2' : '#000000';
@@ -279,9 +276,7 @@ function renderTrendChart(months, aggregatedData) {
       });
     }
   } else {
-    // ==========================================
     // 模式 B：组合堆叠构成 (累积堆叠)
-    // ==========================================
     const isBar = (currentChartViewMode === 'annual' || months.length <= 60);
 
     datasets = loans.map((loan, index) => {
@@ -425,8 +420,36 @@ function renderEmptyState() {
 }
 
 // ==========================================
-// 3. 导航树与视图切换
+// 3. 导航树与对齐规范渲染
 // ==========================================
+
+function getTreeIconHTML(type, isMaterial) {
+  if (isMaterial) {
+    switch (type) {
+      case 'summary':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>`;
+      case 'loan':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
+      case 'plus':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+      case 'home':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
+      case 'disabled':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"/></svg>`;
+      default:
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/></svg>`;
+    }
+  } else {
+    switch (type) {
+      case 'summary': return `<span class="win-icon-chart"></span>`;
+      case 'loan': return `<span class="win-icon-file"></span>`;
+      case 'plus': return `<span class="win-icon-plus"></span>`;
+      case 'home': return `<span class="win-icon-folder"></span>`;
+      case 'disabled': return `<span class="win-icon-disabled"></span>`;
+      default: return `<span class="win-icon-file"></span>`;
+    }
+  }
+}
 
 function renderTreeView() {
   const container = document.getElementById('treeView');
@@ -434,13 +457,16 @@ function renderTreeView() {
   container.innerHTML = '';
 
   const currentTheme = getGlobalTheme();
+  const isMaterial = (currentTheme === 'material');
 
   // 1. 全局汇总节点
   const sumNode = document.createElement('div');
   sumNode.className = `win-tree-item ${currentSelectedId === 'summary' ? 'selected' : ''}`;
   sumNode.innerHTML = `
-    <span class="win-tree-item-icon win-icon-chart"></span>
-    <span class="win-tree-item-title">贷款组合总览</span>
+    <div class="win-tree-item-icon">${getTreeIconHTML('summary', isMaterial)}</div>
+    <div class="win-tree-item-info">
+      <span class="win-tree-item-name">贷款组合总览</span>
+    </div>
   `;
   sumNode.onclick = () => selectTreeNode('summary');
   container.appendChild(sumNode);
@@ -453,7 +479,7 @@ function renderTreeView() {
     const amountWanyuan = (loan.amount / 10000).toFixed(0);
 
     loanNode.innerHTML = `
-      <span class="win-tree-item-icon win-icon-file"></span>
+      <div class="win-tree-item-icon">${getTreeIconHTML('loan', isMaterial)}</div>
       <div class="win-tree-item-info">
         <span class="win-tree-item-name">${escapeHTML(loan.name)}</span>
         <span class="win-tree-item-badge">${methodBadge} · ${amountWanyuan}万</span>
@@ -467,7 +493,7 @@ function renderTreeView() {
   const actionContainer = document.createElement('div');
   actionContainer.className = 'win-sidebar-actions';
   actionContainer.style.marginTop = '10px';
-  actionContainer.style.borderTop = '1px dotted var(--win-shadow)';
+  actionContainer.style.borderTop = isMaterial ? '1px solid #e2e8f0' : '1px dotted var(--win-shadow)';
   actionContainer.style.paddingTop = '8px';
   actionContainer.style.display = 'flex';
   actionContainer.style.flexDirection = 'column';
@@ -480,25 +506,31 @@ function renderTreeView() {
     addNode.style.opacity = '0.6';
     addNode.style.cursor = 'not-allowed';
     addNode.innerHTML = `
-      <span class="win-tree-item-icon win-icon-disabled"></span>
-      <span>新增单笔贷款 (已达上限)</span>
+      <div class="win-tree-item-icon">${getTreeIconHTML('disabled', isMaterial)}</div>
+      <div class="win-tree-item-info">
+        <span class="win-tree-item-name">新增单笔贷款 (已达上限)</span>
+      </div>
     `;
   } else {
     addNode.innerHTML = `
-      <span class="win-tree-item-icon win-icon-plus"></span>
-      <span class="win-tree-action-btn">+ 新增单笔贷款</span>
+      <div class="win-tree-item-icon">${getTreeIconHTML('plus', isMaterial)}</div>
+      <div class="win-tree-item-info">
+        <span class="win-tree-item-name win-tree-action-btn">新增单笔贷款</span>
+      </div>
     `;
   }
   addNode.onclick = createNewLoan;
   actionContainer.appendChild(addNode);
 
-  // 一键创建房贷组合 (公积金 + 商贷)
+  // 一键创建房贷组合 (公积金 + 商贷) - 唯一保留入口
   if (loans.length < MAX_LOANS - 1) {
     const comboNode = document.createElement('div');
     comboNode.className = 'win-tree-item win-tree-action-item';
     comboNode.innerHTML = `
-      <span class="win-tree-item-icon win-icon-chart"></span>
-      <span class="win-tree-action-btn" style="color: #0b57d0;">🏠 一键房贷组合</span>
+      <div class="win-tree-item-icon">${getTreeIconHTML('home', isMaterial)}</div>
+      <div class="win-tree-item-info">
+        <span class="win-tree-item-name win-tree-action-btn" style="color: #0b57d0;">一键创建房贷组合</span>
+      </div>
     `;
     comboNode.onclick = createMortgageCombo;
     actionContainer.appendChild(comboNode);
@@ -780,10 +812,10 @@ function createNewLoan() {
   }
 
   let count = 1;
-  let newName = `商业贷款 ${loans.length + count}`;
+  let newName = `商业房贷 ${loans.length + count}`;
   while (loans.some(l => l.name === newName)) {
     count++;
-    newName = `商业贷款 ${loans.length + count}`;
+    newName = `商业房贷 ${loans.length + count}`;
   }
 
   const newId = createUniqueLoanId();

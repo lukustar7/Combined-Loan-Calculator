@@ -22,13 +22,10 @@
         </div>
         <div class="m3-title-group">
           <h1 class="m3-app-title">贷款组合管理器</h1>
-          <span class="m3-app-subtitle">LoanLens · 多笔债务合并与提前还款省息测算</span>
+          <span class="m3-app-subtitle">LoanLens · 智能多笔债务合并与提前还款测算</span>
         </div>
       </div>
       <div class="m3-header-actions">
-        <button class="m3-btn m3-btn-tonal" onclick="createMortgageCombo()">
-          <span class="m3-btn-icon">🏠</span><span>一键房贷组合</span>
-        </button>
         <button class="m3-btn m3-btn-filled" onclick="createNewLoan()">
           <span class="m3-btn-icon">+</span><span>新增贷款</span>
         </button>
@@ -360,9 +357,6 @@
         <div class="win-start-menu-item" onclick="createNewLoan(); toggleStartMenu();">
           <span class="win-menu-icon win-icon-plus"></span><span>新增单笔贷款</span>
         </div>
-        <div class="win-start-menu-item" onclick="createMortgageCombo(); toggleStartMenu();" style="font-weight: bold; color: var(--win-blue-dark);">
-          <span class="win-menu-icon win-icon-chart"></span><span>一键创建房贷组合 (公积金+商贷)</span>
-        </div>
         <div class="win-start-menu-item" onclick="clearAllData(); toggleStartMenu();">
           <span class="win-menu-icon win-icon-delete"></span><span>清空所有数据</span>
         </div>
@@ -380,7 +374,7 @@
       </div>
     </div>
 
-    <!-- 关于弹窗 -->
+    <!-- 关于弹窗 (极简清爽) -->
     <div class="win-dialog-overlay" id="aboutDialogOverlay" onclick="closeAboutDialog()">
       <div class="win-dialog win-outset" onclick="event.stopPropagation()">
         <div class="win-titlebar">
@@ -392,10 +386,9 @@
         <div class="win-dialog-body">
           <div class="win-dialog-icon win-icon-save"></div>
           <div class="win-dialog-message">
-            <strong>贷款组合管理器 (Combined Loan Calculator)</strong><br>
-            <span>版本号：v1.5.0</span><br><br>
-            <span>纯静态多笔债务合并与提前还款测算工具。支持零延迟实时反应式计算、提前还款省息效益分析、单笔独立走势与组合堆叠分析、CSV 导出，以及 Windows 98 经典与 Google Material 3 现代双主题切换。</span><br><br>
-            <span>著作权所有 (C) 1998 - 2026.</span>
+            <strong style="font-size: 13px;">贷款组合管理器 (LoanLens)</strong><br>
+            <span style="color: #64748b; font-size: 11px;">版本号：v1.5.0</span><br><br>
+            <span>纯静态离线多笔债务合并与提前还款测算工具。遵循 MIT License 开源协议。</span>
           </div>
         </div>
         <div class="win-dialog-footer">
