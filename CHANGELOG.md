@@ -9,6 +9,7 @@
 - 深度适配 iOS Safari 安全区（Safe Area Insets，支持 `viewport-fit=cover` 与 `env(safe-area-inset-*)`），彻底解决顶部刘海/灵动岛/状态栏重叠模糊及底部地址栏遮挡问题。
 - 新增移动端横向滑动手势贷款导航胶囊栏（Scrollable Horizontal Segmented Bar），释放手机屏幕垂直空间，支持点击自动居中平滑滚动。
 - 新增移动端表单防缩放配置（输入框与选择器设置 `16px` 字体），彻底杜绝 iOS Safari 聚焦输入时的强制放大与页面跳动。
+- 新增还款方式与提前还款策略专属分段胶囊选择器（Segmented Group），彻底根治移动端单选文字折行与圆圈错位问题。
 
 ### Changed
 

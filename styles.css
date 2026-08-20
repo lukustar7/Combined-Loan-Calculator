@@ -150,46 +150,49 @@ body {
   word-break: break-all;
 }
 
-/* 单选框与分段控件 */
-.win-segment-control {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.win-radio-container {
+/* 分段胶囊选择器 (Segmented Control，永不折行) */
+.win-segment-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.win-radio {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+  background-color: var(--win-face);
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  box-shadow: -1px -1px 0 0 var(--win-black);
-  background-color: var(--win-white);
-  outline: none;
-  position: relative;
-  flex-shrink: 0;
+  padding: 1px;
+  gap: 2px;
+  max-width: 100%;
 }
 
-.win-radio:checked::after {
-  content: '';
+.win-segment-option {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win-segment-input {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 6px;
-  height: 6px;
-  background-color: var(--win-text);
-  border-radius: 50%;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.win-segment-label {
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--win-text);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win-segment-input:checked + .win-segment-label {
+  background-color: var(--win-blue-dark);
+  color: var(--win-white);
+  font-weight: bold;
 }
 
 /* ==========================================
@@ -1586,6 +1589,33 @@ body.theme-material .win-amount-helper {
   padding: 4px 10px;
 }
 
+/* Material 3 分段胶囊 */
+body.theme-material .win-segment-group {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 3px;
+  display: inline-flex;
+}
+
+body.theme-material .win-segment-label {
+  padding: 5px 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+body.theme-material .win-segment-input:checked + .win-segment-label {
+  background: #ffffff;
+  color: #0b57d0;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 /* 快捷芯片按钮 */
 body.theme-material .win-quick-term-btn,
 body.theme-material .win-quick-name-btn {
@@ -2021,15 +2051,17 @@ body.theme-material .win-dialog {
     border-radius: 9999px;
   }
 
-  .win-segment-control {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 6px;
+  .win-segment-group {
+    display: inline-flex !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin-top: 2px !important;
   }
 
-  .win-radio-container {
-    font-size: 12px;
+  .win-segment-label {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
   }
 
   .win-savings-card {
