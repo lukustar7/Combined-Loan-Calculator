@@ -922,25 +922,32 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 28px;
+  height: calc(28px + var(--sab));
+  min-height: calc(28px + var(--sab));
   background-color: var(--win-face);
   border-top: 2px solid var(--win-highlight);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 4px;
-  padding-bottom: max(2px, var(--sab));
+  padding: 2px 4px 0 4px;
+  padding-bottom: var(--sab);
   z-index: 1000;
   box-shadow: 0 -1px 0 0 var(--win-shadow);
+  box-sizing: border-box;
 }
 
 .win-start-btn {
   font-weight: bold;
-  height: 22px;
-  padding: 2px 6px;
-  display: flex;
-  align-items: center;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  padding: 2px 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
   gap: 4px;
+  box-sizing: border-box !important;
+  flex-shrink: 0;
+  line-height: 1 !important;
 }
 
 .win-start-logo {
@@ -965,43 +972,56 @@ body {
 
 .win-task-items {
   flex-grow: 1;
-  margin-left: 8px;
+  margin-left: 6px;
   display: flex;
+  align-items: center;
   gap: 4px;
   overflow: hidden;
+  height: 22px;
 }
 
 .win-task-btn {
-  height: 22px;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
   max-width: 180px;
   text-align: left;
   justify-content: flex-start;
-  padding: 2px 6px;
-  font-size: 11px;
+  padding: 2px 6px !important;
+  font-size: 11px !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex !important;
+  align-items: center !important;
   border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-sizing: border-box !important;
+  line-height: 1 !important;
 }
 
 .win-task-btn.active {
   background-color: var(--win-face);
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
-  padding: 3px 5px 1px 7px;
+  padding: 3px 5px 1px 7px !important;
   font-weight: bold;
 }
 
 .win-systray {
-  height: 22px;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  padding: 2px 6px;
-  display: flex;
-  align-items: center;
+  padding: 2px 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
   gap: 6px;
-  font-size: 11px;
+  font-size: 11px !important;
   background-color: var(--win-face);
+  box-sizing: border-box !important;
+  flex-shrink: 0;
+  line-height: 1 !important;
 }
 
 .win-systray-clock {
@@ -1011,7 +1031,7 @@ body {
 
 .win-start-menu {
   position: fixed;
-  bottom: 30px;
+  bottom: calc(28px + var(--sab));
   left: 2px;
   width: 240px;
   background-color: var(--win-face);
@@ -2186,10 +2206,20 @@ body.theme-material .win-dialog {
     gap: 8px;
   }
 
-  .win-btn {
+  .win-btn:not(.win-start-btn):not(.win-task-btn):not(.win-titlebar-btn) {
     min-height: 38px;
     padding: 6px 14px;
     font-size: 13px;
+  }
+
+  .win-start-btn,
+  .win-task-btn,
+  .win-systray {
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    padding: 2px 6px !important;
+    font-size: 11px !important;
   }
 
   /* 8. 弹窗移动端自适应与安全区 */
