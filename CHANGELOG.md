@@ -6,7 +6,7 @@
 
 ### Added
 
-- 新增太鼓达人画风（Taiko Style）专属 App 图标系列（包含 `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.png`, `favicon.ico`），采用“戴瓦房屋顶手捧算盘的可爱金币君”拟人化主角。
+- 新增太鼓达人画风（Taiko Style）专属 App 图标系列（包含 `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.png`, `favicon.ico`），采用“戴瓦房屋顶手捧算盘的可爱金币君”拟人化主角，并通过 Flood Fill 算法实现 100% 满铺正方形纯色背景，彻底消除移动端系统裁切时的白角瑕疵。
 - 新增 PWA Web App Manifest (`manifest.json`) 配置，精简手机桌面应用名称为**「合贷计算」**，彻底解决添加到 iOS/Android 主屏幕时标题过长被省略号截断的问题。
 - 深度适配 iOS Safari 安全区（Safe Area Insets，支持 `viewport-fit=cover` 与 `env(safe-area-inset-*)`），彻底解决顶部刘海/灵动岛/状态栏重叠模糊及底部地址栏遮挡问题。
 - 新增移动端横向滑动手势贷款导航胶囊栏（Scrollable Horizontal Segmented Bar），释放手机屏幕垂直空间，支持点击自动居中平滑滚动。
