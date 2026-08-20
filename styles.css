@@ -1798,10 +1798,11 @@ body.theme-material .win-dialog {
   }
 
   /* 3. 移动端横向滑动手势导航条 (Scrollable Horizontal Chips) */
+  /* 3. 移动端横向滑动手势导航条 (Win98 经典直角 3D 拟物 vs M3 现代圆角胶囊) */
   .win-explorer-layout {
     flex-direction: column;
     padding: 8px 8px max(16px, var(--sab)) 8px;
-    gap: 10px;
+    gap: 8px;
     height: auto;
     overflow-y: visible;
   }
@@ -1811,20 +1812,29 @@ body.theme-material .win-dialog {
     gap: 12px;
   }
 
+  /* Win98 默认移动端导航容器：经典 3D 凹陷直角工具栏 */
   .win-sidebar-tree {
     width: 100% !important;
     height: auto !important;
-    min-height: 44px;
+    min-height: 38px;
     flex-shrink: 0;
-    padding: 4px 6px;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    padding: 3px 4px;
+    background-color: var(--win-face);
+    border: 2px solid;
+    border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+    box-shadow: -1px -1px 0 0 var(--win-black);
+    border-radius: 0 !important;
     overflow: hidden;
   }
 
+  /* M3 现代导航容器：白色圆角卡片 */
   body.theme-material .win-sidebar-tree {
-    border-radius: 14px;
+    background: #ffffff;
+    border-radius: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
     padding: 6px 8px;
+    min-height: 44px;
   }
 
   .m3-sidebar-header {
@@ -1835,7 +1845,7 @@ body.theme-material .win-dialog {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
@@ -1846,25 +1856,76 @@ body.theme-material .win-dialog {
     display: none;
   }
 
+  /* Win98 移动端标签：经典 3D 凸起直角方块按钮 */
   .win-tree-item {
     flex-shrink: 0 !important;
-    padding: 6px 12px !important;
-    border-radius: 9999px !important;
+    padding: 4px 8px !important;
+    border-radius: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    font-size: 13px !important;
-    min-height: 34px;
+    background: var(--win-face) !important;
+    border: 2px solid !important;
+    border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight) !important;
+    box-shadow: 1px 1px 0 0 var(--win-black) !important;
+    font-size: 12px !important;
+    font-family: var(--win-font);
+    color: var(--win-text) !important;
+    min-height: 28px;
     margin-bottom: 0 !important;
   }
 
+  .win-tree-item:active {
+    border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow) !important;
+    box-shadow: -1px -1px 0 0 var(--win-black) !important;
+    padding: 5px 7px 3px 9px !important;
+  }
+
+  /* Win98 移动端标签选中：经典 3D 凹陷深蓝底白字 */
   .win-tree-item.selected {
+    background: var(--win-blue-dark) !important;
+    color: var(--win-white) !important;
+    border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow) !important;
+    box-shadow: -1px -1px 0 0 var(--win-black) !important;
+    font-weight: bold;
+  }
+
+  .win-tree-item.selected .win-tree-item-name {
+    color: var(--win-white) !important;
+  }
+
+  .win-tree-item.selected .win-tree-item-badge {
+    color: #ffff99 !important;
+  }
+
+  /* M3 现代标签：圆角微质感胶囊 */
+  body.theme-material .win-tree-item {
+    padding: 6px 12px !important;
+    border-radius: 9999px !important;
+    gap: 6px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+    font-family: var(--win-font);
+    color: #334155 !important;
+    min-height: 34px;
+  }
+
+  body.theme-material .win-tree-item.selected {
     background: #d1e1fb !important;
     color: #0041a2 !important;
     border-color: #bad3f9 !important;
+    box-shadow: none !important;
     font-weight: 600;
+  }
+
+  body.theme-material .win-tree-item.selected .win-tree-item-name {
+    color: #0041a2 !important;
+  }
+
+  body.theme-material .win-tree-item.selected .win-tree-item-badge {
+    color: #0041a2 !important;
   }
 
   .win-tree-item-icon {
@@ -1893,7 +1954,7 @@ body.theme-material .win-dialog {
   .win-sidebar-actions {
     display: flex !important;
     flex-direction: row !important;
-    gap: 6px !important;
+    gap: 4px !important;
     margin-top: 0 !important;
     padding-top: 0 !important;
     border-top: none !important;
@@ -1901,11 +1962,25 @@ body.theme-material .win-dialog {
     margin-left: 2px;
   }
 
+  /* Win98 移动端快捷操作按钮：直角 3D 按钮 */
   .win-tree-action-item {
+    border-radius: 0 !important;
+    padding: 4px 8px !important;
+    min-height: 28px;
+    background: var(--win-face) !important;
+    border: 2px solid !important;
+    border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight) !important;
+    box-shadow: 1px 1px 0 0 var(--win-black) !important;
+  }
+
+  /* M3 移动端快捷操作按钮：现代圆角按钮 */
+  body.theme-material .win-tree-action-item {
     border-radius: 9999px !important;
     padding: 6px 12px !important;
     min-height: 34px;
     background: #ffffff !important;
+    border: 1px dashed #cbd5e1 !important;
+    box-shadow: none !important;
   }
 
   /* 4. 工作区与自然内容展开 */
