@@ -175,24 +175,28 @@
                   <div class="win-group-box">
                     <span class="win-group-box-title">贷款基本属性配置</span>
                     
-                    <div style="max-width: 580px; margin: 10px 0; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="max-width: 580px; margin: 10px 0; display: flex; flex-direction: column; gap: 10px;">
                       
                       <div class="win-field-row">
                         <label>贷款名称：</label>
-                        <input type="text" id="loanName" class="win-input" oninput="handleParamChange()" style="flex: 0.6;">
-                        <div class="win-quick-names" style="display: flex; gap: 4px; flex-wrap: wrap;">
-                          <button class="win-quick-name-btn" onclick="setQuickName('商业房贷')">商贷</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('公积金房贷')">公积金</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('车贷')">车贷</button>
-                          <button class="win-quick-name-btn" onclick="setQuickName('消费贷')">消费贷</button>
+                        <div class="win-field-control-wrap">
+                          <div class="win-input-group" style="width: 100%;">
+                            <input type="text" id="loanName" class="win-input" oninput="handleParamChange()" style="flex: 1; min-width: 0;">
+                          </div>
+                          <div class="win-quick-names">
+                            <button class="win-quick-name-btn" onclick="setQuickName('商业房贷')">商贷</button>
+                            <button class="win-quick-name-btn" onclick="setQuickName('公积金房贷')">公积金</button>
+                            <button class="win-quick-name-btn" onclick="setQuickName('车贷')">车贷</button>
+                            <button class="win-quick-name-btn" onclick="setQuickName('消费贷')">消费贷</button>
+                          </div>
                         </div>
                       </div>
                       
-                      <div class="win-field-row" style="align-items: flex-start;">
-                        <label style="margin-top: 4px;">贷款金额：</label>
-                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                          <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="number" id="loanAmount" class="win-input" min="0.01" step="any" oninput="handleParamChange()" style="flex: 1;">
+                      <div class="win-field-row">
+                        <label>贷款金额：</label>
+                        <div class="win-field-control-wrap">
+                          <div class="win-input-group" style="width: 100%;">
+                            <input type="number" id="loanAmount" class="win-input" min="0.01" step="any" oninput="handleParamChange()" style="flex: 1; min-width: 0;">
                             <span class="unit">元</span>
                           </div>
                           <!-- 实时中文大写与万元换算辅助胶囊 -->
@@ -202,42 +206,58 @@
 
                       <div class="win-field-row">
                         <label>年化利率：</label>
-                        <input type="number" id="loanRate" class="win-input" min="0" max="100" step="0.01" oninput="handleParamChange()" style="flex: 0.4;">
-                        <span class="unit">%</span>
+                        <div class="win-field-control-wrap">
+                          <div class="win-input-group">
+                            <input type="number" id="loanRate" class="win-input" min="0" max="100" step="0.01" oninput="handleParamChange()" style="width: 110px;">
+                            <span class="unit">%</span>
+                          </div>
+                        </div>
                       </div>
 
                       <div class="win-field-row">
                         <label>还款方式：</label>
-                        <div class="win-segment-control">
-                          <label class="win-radio-container">
-                            <input type="radio" name="repayMethod" value="ACPI" class="win-radio" checked onchange="handleParamChange()">
-                            <span>等额本息 (每月月供恒定)</span>
-                          </label>
-                          <label class="win-radio-container">
-                            <input type="radio" name="repayMethod" value="ACP" class="win-radio" onchange="handleParamChange()">
-                            <span>等额本金 (每月月供逐月递减)</span>
-                          </label>
+                        <div class="win-field-control-wrap">
+                          <div class="win-segment-control">
+                            <label class="win-radio-container">
+                              <input type="radio" name="repayMethod" value="ACPI" class="win-radio" checked onchange="handleParamChange()">
+                              <span>等额本息 (每月月供恒定)</span>
+                            </label>
+                            <label class="win-radio-container">
+                              <input type="radio" name="repayMethod" value="ACP" class="win-radio" onchange="handleParamChange()">
+                              <span>等额本金 (每月逐月递减)</span>
+                            </label>
+                          </div>
                         </div>
                       </div>
 
                       <div class="win-field-row">
                         <label>贷款期限：</label>
-                        <input type="number" id="loanTerm" class="win-input" min="1" step="1" oninput="handleParamChange()" style="flex: 0.35;">
-                        <span class="unit">个月</span>
-                        <div class="win-quick-terms">
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(60)">5年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(120)">10年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(240)">20年</button>
-                          <button class="win-quick-term-btn" onclick="setQuickTerm(360)">30年</button>
+                        <div class="win-field-control-wrap">
+                          <div class="win-term-row">
+                            <div class="win-input-group">
+                              <input type="number" id="loanTerm" class="win-input" min="1" step="1" oninput="handleParamChange()" style="width: 90px;">
+                              <span class="unit">个月</span>
+                            </div>
+                            <div class="win-quick-terms">
+                              <button class="win-quick-term-btn" onclick="setQuickTerm(60)">5年</button>
+                              <button class="win-quick-term-btn" onclick="setQuickTerm(120)">10年</button>
+                              <button class="win-quick-term-btn" onclick="setQuickTerm(240)">20年</button>
+                              <button class="win-quick-term-btn" onclick="setQuickTerm(360)">30年</button>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <div class="win-field-row">
                         <label>首次还款：</label>
-                        <input type="number" id="loanStartYear" class="win-input" min="1990" max="2100" step="1" oninput="handleParamChange()" style="flex: 0.35;">
-                        <span style="margin: 0 2px;">年</span>
-                        <input type="number" id="loanStartMonth" class="win-input" min="1" max="12" step="1" oninput="handleParamChange()" style="flex: 0.25;">
-                        <span>月</span>
+                        <div class="win-field-control-wrap">
+                          <div class="win-date-group">
+                            <input type="number" id="loanStartYear" class="win-input" min="1990" max="2100" step="1" oninput="handleParamChange()" style="width: 85px;">
+                            <span class="unit">年</span>
+                            <input type="number" id="loanStartMonth" class="win-input" min="1" max="12" step="1" oninput="handleParamChange()" style="width: 65px;">
+                            <span class="unit">月</span>
+                          </div>
+                        </div>
                       </div>
 
                     </div>
