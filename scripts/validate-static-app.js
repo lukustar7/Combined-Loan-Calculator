@@ -12,7 +12,10 @@ const requiredFiles = [
   'styles.css',
   'app.js',
   'src/loan-engine.js',
-  'vendor/chart.umd.min.js'
+  'vendor/chart.umd.min.js',
+  'manifest.json',
+  'icon-192.png',
+  'apple-touch-icon.png'
 ];
 
 await Promise.all(requiredFiles.map(file => (
