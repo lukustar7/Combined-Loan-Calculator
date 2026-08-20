@@ -217,14 +217,14 @@
                       <div class="win-field-row">
                         <label>还款方式：</label>
                         <div class="win-field-control-wrap">
-                          <div class="win-segment-group">
-                            <label class="win-segment-option">
-                              <input type="radio" name="repayMethod" value="ACPI" class="win-segment-input" checked onchange="handleParamChange()">
-                              <span class="win-segment-label">等额本息</span>
+                          <div class="win-btn-toggle-group">
+                            <label class="win-toggle-btn">
+                              <input type="radio" name="repayMethod" value="ACPI" class="win-toggle-input" checked onchange="handleParamChange()">
+                              <span class="win-toggle-text">等额本息</span>
                             </label>
-                            <label class="win-segment-option">
-                              <input type="radio" name="repayMethod" value="ACP" class="win-segment-input" onchange="handleParamChange()">
-                              <span class="win-segment-label">等额本金</span>
+                            <label class="win-toggle-btn">
+                              <input type="radio" name="repayMethod" value="ACP" class="win-toggle-input" onchange="handleParamChange()">
+                              <span class="win-toggle-text">等额本金</span>
                             </label>
                           </div>
                         </div>
@@ -518,14 +518,14 @@
               </div>
               <div id="dialogPrepayAmountHelper" style="font-size: 11px; color: var(--win-text-muted); padding-left: 88px; margin-top: -4px;"></div>
               <div class="win-field-row" style="align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                <div class="win-segment-group">
-                  <label class="win-segment-option">
-                    <input type="radio" name="dialogPrepayMethod" value="shrink" class="win-segment-input" checked>
-                    <span class="win-segment-label">缩短期限</span>
+                <div class="win-btn-toggle-group">
+                  <label class="win-toggle-btn">
+                    <input type="radio" name="dialogPrepayMethod" value="shrink" class="win-toggle-input" checked>
+                    <span class="win-toggle-text">缩短期限</span>
                   </label>
-                  <label class="win-segment-option">
-                    <input type="radio" name="dialogPrepayMethod" value="reduce" class="win-segment-input">
-                    <span class="win-segment-label">减少月供</span>
+                  <label class="win-toggle-btn">
+                    <input type="radio" name="dialogPrepayMethod" value="reduce" class="win-toggle-input">
+                    <span class="win-toggle-text">减少月供</span>
                   </label>
                 </div>
                 <button class="win-btn" onclick="addTempPrepay()" style="padding: 3px 12px; min-width: 80px;">

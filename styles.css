@@ -150,48 +150,61 @@ body {
   word-break: break-all;
 }
 
-/* 分段胶囊选择器 (Segmented Control，永不折行) */
-.win-segment-group {
+/* 独立互斥切换按钮组 (Toggle Button Group) - 零多余留白、零溢出 */
+.win-btn-toggle-group {
   display: inline-flex;
   align-items: center;
-  background-color: var(--win-face);
-  border: 2px solid;
-  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
-  padding: 1px;
-  gap: 2px;
-  max-width: 100%;
+  gap: 6px;
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
-.win-segment-option {
+.win-toggle-btn {
   position: relative;
-  cursor: pointer;
-  user-select: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--win-font);
+  font-size: 12px;
+  background-color: var(--win-face);
+  color: var(--win-text);
+  border: 2px solid;
+  border-color: var(--win-highlight) var(--win-shadow) var(--win-shadow) var(--win-highlight);
+  box-shadow: 1px 1px 0 0 var(--win-black);
+  padding: 3px 12px;
+  height: 24px;
+  outline: none;
 }
 
-.win-segment-input {
+.win-toggle-btn:active {
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
+  padding: 4px 11px 2px 13px;
+}
+
+.win-toggle-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
   pointer-events: none;
+  margin: 0;
 }
 
-.win-segment-label {
-  padding: 2px 10px;
-  font-size: 12px;
-  color: var(--win-text);
+.win-toggle-text {
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.win-segment-input:checked + .win-segment-label {
+/* Win98 选中态：经典 3D 凹陷 + 深蓝底白字 */
+.win-toggle-btn:has(.win-toggle-input:checked),
+.win-toggle-input:checked + .win-toggle-text {
   background-color: var(--win-blue-dark);
   color: var(--win-white);
+  border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
+  box-shadow: -1px -1px 0 0 var(--win-black);
   font-weight: bold;
 }
 
@@ -1589,31 +1602,43 @@ body.theme-material .win-amount-helper {
   padding: 4px 10px;
 }
 
-/* Material 3 分段胶囊 */
-body.theme-material .win-segment-group {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 9999px;
-  padding: 3px;
-  gap: 3px;
+/* Material 3 独立互斥切换按钮 (平齐、干净、零空白) */
+body.theme-material .win-btn-toggle-group {
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
   display: inline-flex;
 }
 
-body.theme-material .win-segment-label {
-  padding: 5px 16px;
-  border-radius: 9999px;
+body.theme-material .win-toggle-btn {
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  box-shadow: none;
+  color: #475569;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
+  padding: 0 16px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
 }
 
-body.theme-material .win-segment-input:checked + .win-segment-label {
-  background: #ffffff;
-  color: #0b57d0;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+body.theme-material .win-toggle-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+body.theme-material .win-toggle-btn:has(.win-toggle-input:checked),
+body.theme-material .win-toggle-input:checked + .win-toggle-text {
+  background: #0b57d0 !important;
+  color: #ffffff !important;
+  border-color: #0b57d0 !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(11, 87, 208, 0.25) !important;
 }
 
 /* 快捷芯片按钮 */
@@ -2126,17 +2151,23 @@ body.theme-material .win-dialog {
     border-radius: 9999px;
   }
 
-  .win-segment-group {
+  .win-btn-toggle-group {
     display: inline-flex !important;
-    width: fit-content !important;
-    max-width: 100% !important;
+    gap: 6px !important;
     margin-top: 2px !important;
   }
 
-  .win-segment-label {
-    padding: 6px 14px !important;
+  .win-toggle-btn {
+    height: 30px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  body.theme-material .win-toggle-btn {
+    height: 34px !important;
+    padding: 0 14px !important;
     font-size: 13px !important;
-    white-space: nowrap !important;
+    border-radius: 8px !important;
   }
 
   .win-savings-card {
