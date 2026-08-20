@@ -32,7 +32,7 @@ import {
  * ============================================================================
  */
 
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.5.1";
 let loans = []; // 存储所有贷款的数组
 let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代表全局汇总，数字字符串代表单笔贷款 ID)
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
@@ -537,6 +537,15 @@ function renderTreeView() {
 function selectTreeNode(id) {
   currentSelectedId = id;
   renderTreeView();
+
+  // 移动端横向标签自动居中平滑滚动
+  const container = document.getElementById('treeView');
+  if (container) {
+    const activeItem = container.querySelector('.win-tree-item.selected');
+    if (activeItem && typeof activeItem.scrollIntoView === 'function') {
+      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }
 
   const panelSummary = document.getElementById('panelSummary');
   const panelDetail = document.getElementById('panelDetail');
@@ -1173,9 +1182,9 @@ function updateThemeToggleBtnText(themeName) {
   const btn = document.getElementById('m3ThemeToggleBtn');
   if (btn) {
     if (themeName === 'material') {
-      btn.innerHTML = `<span class="m3-btn-icon">🎨</span><span>切换到 Windows 98</span>`;
+      btn.innerHTML = `<span class="m3-btn-icon">🎨</span><span class="m3-btn-text">切换到 Windows 98</span>`;
     } else {
-      btn.innerHTML = `<span class="m3-btn-icon">✨</span><span>切换到 Material 3</span>`;
+      btn.innerHTML = `<span class="m3-btn-icon">✨</span><span class="m3-btn-text">切换到 Material 3</span>`;
     }
   }
 }

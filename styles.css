@@ -1,12 +1,13 @@
 /*
- * 贷款组合管理器样式系统 v1.5.0
+ * 贷款组合管理器样式系统 v1.5.1
  * 双主题架构：
  * 1. Windows 98 经典复古 (body.theme-standard): 纯正 3D 灰底、窗体、任务栏与开始菜单。
  * 2. Google Material 3 现代质感 (body.theme-material): 纯正现代全屏 Web App 体验，无桌面窗体拟物拼凑。
+ * 包含 iOS Safari 安全区 (Safe Area Insets) 与全视口流式响应式排版。
  */
 
 /* ==========================================
-   CSS 变量：Windows 98 经典主题基准
+   CSS 变量：Windows 98 经典主题基准与安全区
    ========================================== */
 :root {
   --win-teal: #008080;
@@ -25,8 +26,14 @@
   --win-white: #ffffff;
   --win-box-bg: #ffffff;
   --win-text-muted: #606060;
-  --win-font: "MS Sans Serif", Tahoma, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --win-font: "MS Sans Serif", Tahoma, Arial, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   --win-radius: 0px;
+
+  /* iOS Safe Area 环境变量 */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 * {
@@ -820,6 +827,7 @@ body {
 .win-table-container {
   flex: 1;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   border: 2px solid;
   border-color: var(--win-shadow) var(--win-highlight) var(--win-highlight) var(--win-shadow);
   box-shadow: -1px -1px 0 0 var(--win-black);
@@ -881,6 +889,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 2px 4px;
+  padding-bottom: max(2px, var(--sab));
   z-index: 1000;
   box-shadow: 0 -1px 0 0 var(--win-shadow);
 }
@@ -1033,11 +1042,12 @@ body {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background-color: rgba(0,0,0,0.25);
+  background-color: rgba(0,0,0,0.35);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  padding: max(16px, var(--sat)) max(12px, var(--sar)) max(16px, var(--sab)) max(12px, var(--sal));
 }
 
 .win-dialog-overlay.show {
@@ -1202,7 +1212,7 @@ body.theme-material .win-start-menu {
   display: none !important;
 }
 
-/* 铺满全屏布局 */
+/* 铺满全屏布局与安全区 */
 body.theme-material .win98-desktop {
   padding-bottom: 0;
   height: 100vh;
@@ -1222,13 +1232,16 @@ body.theme-material .win98-window {
   min-height: 0;
 }
 
-/* 现代 M3 顶部 Header */
+/* 现代 M3 顶部 Header：严格适配 iOS 顶部安全区 */
 body.theme-material .m3-top-app-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
-  padding: 0 20px;
+  min-height: calc(56px + var(--sat));
+  padding-top: max(10px, var(--sat));
+  padding-bottom: 10px;
+  padding-left: max(16px, var(--sal));
+  padding-right: max(16px, var(--sar));
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
@@ -1252,6 +1265,7 @@ body.theme-material .m3-top-app-bar {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(11, 87, 208, 0.25);
+  flex-shrink: 0;
 }
 
 .m3-title-group {
@@ -1290,6 +1304,8 @@ body.theme-material .m3-top-app-bar {
   cursor: pointer;
   outline: none;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .m3-btn-filled {
@@ -1334,6 +1350,7 @@ body.theme-material .m3-top-app-bar {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .m3-icon-btn:hover {
   background: #f1f5f9;
@@ -1632,75 +1649,352 @@ body.theme-material .win-dialog {
   background: #ffffff;
 }
 
-/* ==========================================
-   响应式适配 (移动端 & 平板)
-   ========================================== */
+/* ==========================================================================
+   响应式架构重塑：移动端与 iOS Safari 体验
+   ========================================================================== */
 @media (max-width: 768px) {
+  /* 1. 解除屏幕锁死截断，开启手机端自然流式滚动 */
   body {
-    overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
-    width: 100vw;
-  }
-  
-  .m3-top-app-bar {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     height: auto;
-    padding: 10px 12px;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  
-  .m3-header-actions {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
+    min-height: 100dvh;
+    padding: 0;
   }
   
   .win98-desktop {
-    height: 100vh;
-    height: 100dvh;
-    padding-bottom: 32px;
+    height: auto;
+    min-height: 100dvh;
+    padding-bottom: max(36px, calc(28px + var(--sab)));
+    overflow-y: visible;
   }
   
   body.theme-material .win98-desktop {
-    padding-bottom: 0;
+    padding-bottom: max(20px, var(--sab));
   }
-  
+
   .win98-window {
     margin: 4px;
+    height: auto;
+    overflow-y: visible;
   }
-  
+
+  body.theme-material .win98-window {
+    margin: 0;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  /* 2. 移动端现代顶栏：安全区防重叠 */
+  body.theme-material .m3-top-app-bar {
+    min-height: auto;
+    padding-top: max(12px, var(--sat));
+    padding-bottom: 10px;
+    padding-left: max(12px, var(--sal));
+    padding-right: max(12px, var(--sar));
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .m3-header-left {
+    gap: 8px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .m3-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+  .m3-logo svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .m3-app-title {
+    font-size: 14px;
+  }
+
+  .m3-app-subtitle {
+    display: none; /* 移动端精简副标题 */
+  }
+
+  .m3-header-actions {
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .m3-btn {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .m3-btn-text {
+    display: inline;
+  }
+
+  .m3-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* 3. 移动端主布局与横向滑动手势导航条 (Scrollable Horizontal Chips) */
   .win-explorer-layout {
     flex-direction: column;
+    padding: 8px 8px max(16px, var(--sab)) 8px;
+    gap: 10px;
+    height: auto;
+    overflow-y: visible;
   }
-  
+
+  body.theme-material .win-explorer-layout {
+    padding: 10px 10px max(20px, var(--sab)) 10px;
+    gap: 12px;
+  }
+
   .win-sidebar-tree {
-    width: 100%;
-    height: 130px;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 44px;
     flex-shrink: 0;
+    padding: 4px 6px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    overflow: hidden;
   }
-  
+
+  body.theme-material .win-sidebar-tree {
+    border-radius: 14px;
+    padding: 6px 8px;
+  }
+
+  .m3-sidebar-header {
+    display: none !important;
+  }
+
+  .win-tree-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 !important;
+    scrollbar-width: none;
+  }
+  .win-tree-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .win-tree-item {
+    flex-shrink: 0 !important;
+    padding: 6px 12px !important;
+    border-radius: 9999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    font-size: 13px !important;
+    min-height: 34px;
+    margin-bottom: 0 !important;
+  }
+
+  .win-tree-item.selected {
+    background: #d1e1fb !important;
+    color: #0041a2 !important;
+    border-color: #bad3f9 !important;
+    font-weight: 600;
+  }
+
+  .win-tree-item-icon {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+  }
+  .win-tree-item-icon svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .win-tree-item-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .win-tree-item-badge {
+    display: inline !important;
+    font-size: 10px !important;
+    opacity: 0.85;
+    margin-top: 0 !important;
+  }
+
+  .win-sidebar-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+    flex-shrink: 0 !important;
+    margin-left: 2px;
+  }
+
+  .win-tree-action-item {
+    border-radius: 9999px !important;
+    padding: 6px 12px !important;
+    min-height: 34px;
+    background: #ffffff !important;
+  }
+
+  /* 4. 工作区与自然内容展开 */
+  .win-workspace {
+    height: auto;
+    overflow: visible;
+  }
+
+  .win-workspace-content {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+    gap: 10px;
+  }
+
+  /* 5. 核心指标卡片：2 列自适应网格 */
   .win-summary-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 6px;
   }
   
+  .win-summary-card-primary {
+    grid-column: span 2;
+  }
+
+  body.theme-material .win-summary-card {
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  body.theme-material .win-summary-card .value {
+    font-size: 18px;
+  }
+
+  /* 6. 图表移动端自适应 */
+  .win-chart-panel {
+    min-height: 260px;
+    height: 280px;
+    max-height: 300px;
+    padding: 8px;
+  }
+
+  .win-group-box-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .win-chart-toolbar {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+    margin-left: 0;
+  }
+
+  .win-chart-control-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+  }
+
+  .win-chart-control-group label {
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .win-chart-control-group select {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  /* 7. 表单输入与防 iOS 放大 (font-size >= 16px) */
+  .win-input,
+  .win-select {
+    height: 36px !important;
+    font-size: 16px !important; /* 关键：防 iOS Safari 聚焦强制放大整屏 */
+    padding: 6px 10px !important;
+    border-radius: 8px;
+  }
+
   .win-field-row {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
   }
-  
+
   .win-field-row label {
     width: 100%;
     text-align: left;
+    font-size: 13px;
+    font-weight: 500;
   }
-  
-  .win-input, .win-select {
-    height: 32px;
+
+  .win-quick-terms,
+  .win-quick-names {
+    gap: 6px;
+    width: 100%;
+  }
+
+  .win-quick-term-btn,
+  .win-quick-name-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 9999px;
+  }
+
+  .win-savings-card {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .win-savings-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .win-action-bar {
+    padding-top: 10px;
+    gap: 8px;
+  }
+
+  .win-btn {
+    min-height: 38px;
+    padding: 6px 14px;
     font-size: 13px;
   }
-  
-  .win-btn {
-    padding: 6px 14px;
-    font-size: 12px;
+
+  /* 8. 弹窗移动端自适应与安全区 */
+  .win-dialog-overlay {
+    padding: max(16px, var(--sat)) max(12px, var(--sar)) max(16px, var(--sab)) max(12px, var(--sal));
+  }
+
+  .win-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - max(32px, calc(var(--sat) + var(--sab))));
+    border-radius: 16px;
   }
 }

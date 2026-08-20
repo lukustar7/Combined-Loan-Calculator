@@ -2,6 +2,21 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 与 [Semantic Versioning](https://semver.org/lang/zh-CN/) 规范。
 
+## [1.5.1] - 2026-08-20
+
+### Added
+
+- 深度适配 iOS Safari 安全区（Safe Area Insets，支持 `viewport-fit=cover` 与 `env(safe-area-inset-*)`），彻底解决顶部刘海/灵动岛/状态栏重叠模糊及底部地址栏遮挡问题。
+- 新增移动端横向滑动手势贷款导航胶囊栏（Scrollable Horizontal Segmented Bar），释放手机屏幕垂直空间，支持点击自动居中平滑滚动。
+- 新增移动端表单防缩放配置（输入框与选择器设置 `16px` 字体），彻底杜绝 iOS Safari 聚焦输入时的强制放大与页面跳动。
+
+### Changed
+
+- 移动端重塑为自然流畅的流式上下滚动布局，解除 `height: 100vh; overflow: hidden;` 导致的屏幕截断与滑动卡死。
+- 优化移动端核心指标卡片为 2 列自适应网格（总额大卡片高亮），提升小屏视觉层级与数字辨识度。
+- 优化移动端图表控制栏自适应与表格横向滑动手势。
+- 优化全站移动端交互按钮最小触控热区（>= 38px/40px），符合 Apple HIG 人机交互规范。
+
 ## [1.5.0] - 2026-08-18
 
 ### Added
