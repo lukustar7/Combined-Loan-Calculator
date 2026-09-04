@@ -32,7 +32,7 @@ import {
  * ============================================================================
  */
 
-const APP_VERSION = "1.5.1";
+const APP_VERSION = "1.5.2";
 let loans = []; // 存储所有贷款的数组
 let currentSelectedId = 'summary'; // 当前选中的树节点 ID ('summary' 代表全局汇总，数字字符串代表单笔贷款 ID)
 let currentDetailTab = 'params'; // 单笔贷款详情中当前激活的选项卡 ('params' 或 'plan')
@@ -43,6 +43,20 @@ let currentChartTypeMode = 'trend'; // 图表展示模式：'trend' (单笔独�
 
 const STORAGE_KEY = 'COMBINED_LOANS_DATA';
 const THEME_PREF_KEY = 'APP_THEME_PREF';
+
+/**
+ * 通用防抖函数：避免频繁高频输入导致主线程掉帧
+ */
+function debounce(fn, delay = 150) {
+  let timer = null;
+  return function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn.apply(this, args);
+    }, delay);
+  };
+}
 
 /**
  * 安全读取浏览器本地存储。
@@ -130,25 +144,31 @@ function calculateAll() {
   const portfolio = aggregateLoanPortfolio(loans);
   globalMonthlyAggregated = portfolio.monthly;
 
-  document.getElementById("sumPrincipal").innerText = `${formatNumber(portfolio.totalPrincipal / 10000)} 万元`;
-  document.getElementById("sumInterest").innerText = `${formatNumber(portfolio.totalInterest / 10000)} 万元`;
-  document.getElementById("sumTotal").innerText = `${formatNumber(portfolio.totalPayment / 10000)} 万元`;
+  // 隐藏面板零渲染优化：仅在大盘面板处于可见状态时才渲染 DOM 表格与 Canvas 图表
+  const panelSummary = document.getElementById("panelSummary");
+  const isSummaryVisible = panelSummary && panelSummary.style.display !== 'none';
 
-  if (portfolio.monthly.length > 0) {
-    document.getElementById("sumFirstMonth").innerText = `${formatNumber(portfolio.firstMonthPayment)} 元`;
-    document.getElementById("sumPeakMonth").innerText = `${portfolio.peakMonth} (${formatNumber(portfolio.peakPayment)}元)`;
-  } else {
-    document.getElementById("sumFirstMonth").innerText = `0.00 元`;
-    document.getElementById("sumPeakMonth").innerText = "-";
-  }
+  if (isSummaryVisible) {
+    document.getElementById("sumPrincipal").innerText = `${formatNumber(portfolio.totalPrincipal / 10000)} 万元`;
+    document.getElementById("sumInterest").innerText = `${formatNumber(portfolio.totalInterest / 10000)} 万元`;
+    document.getElementById("sumTotal").innerText = `${formatNumber(portfolio.totalPayment / 10000)} 万元`;
 
-  renderSummaryTable(portfolio.monthly);
+    if (portfolio.monthly.length > 0) {
+      document.getElementById("sumFirstMonth").innerText = `${formatNumber(portfolio.firstMonthPayment)} 元`;
+      document.getElementById("sumPeakMonth").innerText = `${portfolio.peakMonth} (${formatNumber(portfolio.peakPayment)}元)`;
+    } else {
+      document.getElementById("sumFirstMonth").innerText = `0.00 元`;
+      document.getElementById("sumPeakMonth").innerText = "-";
+    }
 
-  if (currentChartViewMode === "annual") {
-    const annualAggregated = getAnnualAggregatedData(portfolio.monthly);
-    renderTrendChart(annualAggregated.map(row => row.dateStr), annualAggregated);
-  } else {
-    renderTrendChart(portfolio.months, portfolio.monthly);
+    renderSummaryTable(portfolio.monthly);
+
+    if (currentChartViewMode === "annual") {
+      const annualAggregated = getAnnualAggregatedData(portfolio.monthly);
+      renderTrendChart(annualAggregated.map(row => row.dateStr), annualAggregated);
+    } else {
+      renderTrendChart(portfolio.months, portfolio.monthly);
+    }
   }
 }
 
@@ -196,11 +216,6 @@ function renderTrendChart(months, aggregatedData) {
   if (!chartCanvas) return;
   const fallbackEl = document.getElementById('chartFallback');
   const ctx = chartCanvas.getContext('2d');
-  
-  if (trendChart) {
-    trendChart.destroy();
-    trendChart = null;
-  }
 
   if (fallbackEl) {
     fallbackEl.style.display = 'none';
@@ -208,10 +223,20 @@ function renderTrendChart(months, aggregatedData) {
   }
   chartCanvas.style.display = 'block';
 
-  if (loans.length === 0 || months.length === 0) return;
+  if (loans.length === 0 || months.length === 0) {
+    if (trendChart) {
+      trendChart.destroy();
+      trendChart = null;
+    }
+    return;
+  }
 
   const ChartConstructor = globalThis.Chart;
   if (typeof ChartConstructor !== 'function') {
+    if (trendChart) {
+      trendChart.destroy();
+      trendChart = null;
+    }
     chartCanvas.style.display = 'none';
     if (fallbackEl) {
       fallbackEl.style.display = 'flex';
@@ -307,6 +332,33 @@ function renderTrendChart(months, aggregatedData) {
     });
   }
 
+  // 增量更新复用：当图表模式、主题与视图粒度一致时，执行增量更新，杜绝重复创建 Canvas 与内存抖动
+  if (
+    trendChart &&
+    trendChart._chartTypeMode === currentChartTypeMode &&
+    trendChart._chartTheme === currentTheme &&
+    trendChart._chartViewMode === currentChartViewMode
+  ) {
+    trendChart.data.labels = months;
+    trendChart.data.datasets = datasets;
+    if (trendChart.options && trendChart.options.scales) {
+      if (trendChart.options.scales.x) {
+        trendChart.options.scales.x.stacked = isStacked;
+        trendChart.options.scales.x.ticks.maxTicksLimit = window.innerWidth < 768 ? 8 : 24;
+      }
+      if (trendChart.options.scales.y) {
+        trendChart.options.scales.y.stacked = isStacked;
+      }
+    }
+    trendChart.update('none');
+    return;
+  }
+
+  if (trendChart) {
+    trendChart.destroy();
+    trendChart = null;
+  }
+
   try {
     trendChart = new ChartConstructor(ctx, {
       type: 'line',
@@ -386,6 +438,9 @@ function renderTrendChart(months, aggregatedData) {
         }
       }
     });
+    trendChart._chartTypeMode = currentChartTypeMode;
+    trendChart._chartTheme = currentTheme;
+    trendChart._chartViewMode = currentChartViewMode;
   } catch (e) {
     chartCanvas.style.display = 'none';
     trendChart = null;
@@ -770,10 +825,16 @@ function handleParamChange() {
   // 4. 同步侧边栏导航条目（名称与徽章）
   renderTreeView();
 
-  // 5. 保存数据并触发全局大盘与图表重算
-  saveData();
-  calculateAll();
+  // 5. 高性能防抖：持久化存储并按需同步全局大盘
+  debouncedSaveAndSync();
 }
+
+const debouncedSaveAndSync = debounce(() => {
+  saveData();
+  if (currentSelectedId === 'summary') {
+    calculateAll();
+  }
+}, 150);
 
 function setQuickTerm(months) {
   if (currentSelectedId === 'summary') return;
@@ -1175,6 +1236,11 @@ function toggleThemeQuick() {
 
   updateThemeToggleBtnText(nextTheme);
   renderTreeView();
+
+  if (trendChart) {
+    trendChart.destroy();
+    trendChart = null;
+  }
   calculateAll();
 }
 
@@ -1229,6 +1295,11 @@ function applyThemeSelection() {
   writeStorage(THEME_PREF_KEY, targetTheme);
   updateThemeToggleBtnText(targetTheme);
   renderTreeView();
+
+  if (trendChart) {
+    trendChart.destroy();
+    trendChart = null;
+  }
   calculateAll();
 }
 
@@ -1327,6 +1398,12 @@ function initApp() {
     try {
       loans = sanitizeLoansData(JSON.parse(savedData));
     } catch (e) {
+      console.error('读取本地存储数据失败:', e);
+      // 容灾备份：保护用户受损数据不被覆写永久丢失
+      try {
+        writeStorage(`${STORAGE_KEY}_corrupted_${Date.now()}`, savedData);
+      } catch (_) {}
+      alert('系统检测到本地贷款配置异常，已为您备份原始快照并恢复为安全默认数据。');
       loans = sanitizeLoansData([DEFAULT_LOAN]);
     }
   } else {
@@ -1342,6 +1419,29 @@ function initApp() {
   renderTreeView();
   calculateAll();
   startClock();
+
+  // PWA 离线支持：注册 Service Worker
+  if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http') || window.location.protocol === 'https:')) {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('ServiceWorker 注册失败:', err);
+    });
+  }
+
+  // 全局键盘导航：支持 ESC 键关闭打开的模态框
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      const aboutOverlay = document.getElementById('aboutDialogOverlay');
+      const displayOverlay = document.getElementById('displayPropertiesOverlay');
+      const prepayOverlay = document.getElementById('prepayManagerOverlay');
+      if (aboutOverlay && aboutOverlay.classList.contains('show')) {
+        closeAboutDialog();
+      } else if (displayOverlay && displayOverlay.style.display !== 'none') {
+        showDisplayProperties(false);
+      } else if (prepayOverlay && prepayOverlay.style.display !== 'none') {
+        showPrepayManager(false);
+      }
+    }
+  });
 }
 
 Object.assign(globalThis, {

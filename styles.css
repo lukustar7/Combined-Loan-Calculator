@@ -1,5 +1,5 @@
 /*
- * 贷款组合管理器样式系统 v1.5.1
+ * 贷款组合管理器样式系统 v1.5.2
  * 双主题架构：
  * 1. Windows 98 经典复古 (body.theme-standard): 纯正 3D 灰底、窗体、任务栏与开始菜单。
  * 2. Google Material 3 现代质感 (body.theme-material): 纯正现代全屏 Web App 体验，无桌面窗体拟物拼凑。
@@ -34,6 +34,19 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+}
+
+/* 屏幕阅读器专用无障碍隐藏类 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 * {
@@ -1259,9 +1272,47 @@ body.theme-material {
   --win-radius: 12px;
 }
 
-/* 隐藏 Windows 98 专属拟物组件 */
-body.theme-material .win-titlebar {
+/* 仅隐藏 Windows 98 主窗口的拟物标题栏，放行弹窗标题栏 */
+body.theme-material #mainWindow > .win-titlebar {
   display: none !important;
+}
+
+body.theme-material .win-dialog .win-titlebar {
+  display: flex !important;
+  background: transparent;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  height: 44px;
+  padding: 10px 16px;
+  align-items: center;
+}
+
+body.theme-material .win-dialog .win-titlebar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+}
+
+body.theme-material .win-dialog .win-titlebar-btn.close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 14px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+body.theme-material .win-dialog .win-titlebar-btn.close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 body.theme-material .win98-taskbar {
@@ -1781,7 +1832,7 @@ body.theme-material .win-dialog {
   }
 
   .win98-window {
-    margin: 4px;
+    margin: max(4px, var(--sat)) 4px 4px 4px;
     height: auto;
     overflow-y: visible;
   }
@@ -2101,8 +2152,9 @@ body.theme-material .win-dialog {
   .win-chart-control-group select {
     flex: 1;
     min-width: 0;
-    height: 28px;
-    font-size: 12px;
+    height: 36px !important;
+    font-size: 16px !important; /* 关键：防 iOS Safari 聚焦强制放大整屏 */
+    border-radius: 6px;
   }
 
   /* 7. 表单输入：紧凑行内左右排布 (严禁孤立换行) */
@@ -2215,14 +2267,19 @@ body.theme-material .win-dialog {
     font-size: 13px;
   }
 
+  .win98-taskbar {
+    height: calc(34px + var(--sab)) !important;
+    min-height: calc(34px + var(--sab)) !important;
+  }
+
   .win-start-btn,
   .win-task-btn,
   .win-systray {
-    height: 22px !important;
-    min-height: 22px !important;
-    max-height: 22px !important;
-    padding: 2px 6px !important;
-    font-size: 11px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    padding: 3px 8px !important;
+    font-size: 12px !important;
   }
 
   /* 8. 弹窗移动端自适应与安全区 */
@@ -2235,5 +2292,9 @@ body.theme-material .win-dialog {
     max-width: 100% !important;
     max-height: calc(100dvh - max(32px, calc(var(--sat) + var(--sab))));
     border-radius: 16px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
   }
 }

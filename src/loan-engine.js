@@ -69,7 +69,7 @@ export const PALETTE_20 = Object.freeze([
   { fill: '#800000', border: '#500000', m3Fill: '#ba1a1a', m3Border: '#93000a' }, // 铁锈红 / M3 砖红
   { fill: '#800080', border: '#500050', m3Fill: '#6750a4', m3Border: '#4f378b' }, // 紫色 / M3 深度紫
   { fill: '#008080', border: '#005050', m3Fill: '#006874', m3Border: '#004f58' }, // 青绿 / M3 蓝青
-  { fill: '#800000', border: '#505000', m3Fill: '#7a5900', m3Border: '#5d4300' }, // 暗金泥黄 / M3 琥珀
+  { fill: '#808000', border: '#505000', m3Fill: '#7a5900', m3Border: '#5d4300' }, // 暗金泥黄 / M3 琥珀 (修正笔误)
   { fill: '#1b365d', border: '#0d1b2f', m3Fill: '#4a6572', m3Border: '#344955' }, // 藏青灰
   { fill: '#b33939', border: '#801e1e', m3Fill: '#c05621', m3Border: '#9c4221' }, // 珊瑚朱红
   { fill: '#218c74', border: '#145a4a', m3Fill: '#2e7d32', m3Border: '#1b5e20' }, // 薄荷深绿
@@ -84,6 +84,11 @@ export const PALETTE_20 = Object.freeze([
   { fill: '#ffa502', border: '#b87400', m3Fill: '#ea580c', m3Border: '#c2410c' }, // 暖橙
   { fill: '#57606f', border: '#2f3542', m3Fill: '#475569', m3Border: '#334155' }, // 铁板灰
   { fill: '#5352ed', border: '#292896', m3Fill: '#7c3aed', m3Border: '#6d28d9' }  // 鸢尾蓝紫
+]);
+
+const RESERVED_LOAN_IDS = new Set([
+  'summary', '__total__', '__proto__', 'constructor', 'prototype',
+  'tostring', 'valueof', 'hasownproperty', 'isprototypeof'
 ]);
 
 /**
@@ -124,12 +129,12 @@ export function sanitizeLoanName(value, fallback = '未命名贷款') {
 
 /**
  * 清洗内部贷款 ID。
- * ID 会作为图表数据对象的键，因此只允许普通字母、数字、下划线和连字符。
+ * ID 会作为图表数据对象的键，因此只允许普通字母、数字、下划线和连字符，并严格拦截系统状态保留字。
  */
 export function sanitizeLoanId(value, fallback) {
   const rawText = typeof value === 'string' ? value : '';
   const cleanText = rawText.replace(/[^A-Za-z0-9_-]/g, '').slice(0, MAX_LOAN_ID_LENGTH);
-  if (!cleanText || cleanText === '__proto__' || cleanText === 'constructor' || cleanText === 'prototype') {
+  if (!cleanText || RESERVED_LOAN_IDS.has(cleanText.toLowerCase())) {
     return fallback;
   }
   return cleanText;
@@ -284,6 +289,25 @@ function calculateAnnuityPayment(principal, monthlyRate, term) {
 /**
  * 生成一笔贷款的逐月还款计划。
  */
+/**
+ * 根据剩余本金与固定月供，估算等额本息完全结清所需的剩余期数。
+ */
+function estimateRemainingPeriods(principal, monthlyPayment, monthlyRate) {
+  if (principal <= BALANCE_EPSILON || monthlyPayment <= 0) return 0;
+  if (monthlyRate === 0) {
+    return Math.max(1, Math.ceil(principal / monthlyPayment));
+  }
+  const monthlyInterest = principal * monthlyRate;
+  if (monthlyPayment <= monthlyInterest) {
+    return MAX_LOAN_TERM_MONTHS;
+  }
+  const n = (Math.log(monthlyPayment) - Math.log(monthlyPayment - monthlyInterest)) / Math.log1p(monthlyRate);
+  return Math.max(1, Math.ceil(n));
+}
+
+/**
+ * 生成一笔贷款的逐月还款计划。
+ */
 export function calculateSingleLoan(rawLoan) {
   const loan = sanitizeLoan(rawLoan, 0);
   const amount = loan.amount;
@@ -295,6 +319,7 @@ export function calculateSingleLoan(rawLoan) {
   const prepaymentMap = new Map(loan.prepayments.map(item => [item.period, item]));
   const details = [];
   let remainingPrincipal = amount;
+  let effectiveTerm = term; // 记录缩短期限后的有效总期数，防止后续减少月供时被反弹回原期数
 
   if (loan.method === 'ACPI') {
     let monthlyRepayment = calculateAnnuityPayment(amount, monthlyRate, term);
@@ -307,7 +332,7 @@ export function calculateSingleLoan(rawLoan) {
       let extraPrepay = 0;
       let isLastPeriod = false;
 
-      if (period === term || remainingPrincipal - principal <= BALANCE_EPSILON) {
+      if (period >= effectiveTerm || period === term || remainingPrincipal - principal <= BALANCE_EPSILON) {
         principal = remainingPrincipal;
         interest = remainingPrincipal * monthlyRate;
         isLastPeriod = true;
@@ -325,10 +350,17 @@ export function calculateSingleLoan(rawLoan) {
 
       remainingPrincipal = Math.max(0, remainingPrincipal - principal);
 
-      if (prepayItem?.method === 'reduce' && extraPrepay > 0) {
-        const remainingPeriods = term - period;
-        if (remainingPeriods > 0 && remainingPrincipal > BALANCE_EPSILON) {
-          monthlyRepayment = calculateAnnuityPayment(remainingPrincipal, monthlyRate, remainingPeriods);
+      if (prepayItem && extraPrepay > 0) {
+        if (prepayItem.method === 'shrink') {
+          // 缩短期限：更新有效结清期数
+          const expectedRemaining = estimateRemainingPeriods(remainingPrincipal, monthlyRepayment, monthlyRate);
+          effectiveTerm = Math.min(effectiveTerm, period + expectedRemaining);
+        } else if (prepayItem.method === 'reduce') {
+          // 减少月供：严格在有效缩短后的剩余期数内重新摊派
+          const remainingPeriods = effectiveTerm - period;
+          if (remainingPeriods > 0 && remainingPrincipal > BALANCE_EPSILON) {
+            monthlyRepayment = calculateAnnuityPayment(remainingPrincipal, monthlyRate, remainingPeriods);
+          }
         }
       }
 
@@ -345,7 +377,7 @@ export function calculateSingleLoan(rawLoan) {
       let extraPrepay = 0;
       let isLastPeriod = false;
 
-      if (period === term || remainingPrincipal - principal <= BALANCE_EPSILON) {
+      if (period >= effectiveTerm || period === term || remainingPrincipal - principal <= BALANCE_EPSILON) {
         principal = remainingPrincipal;
         interest = remainingPrincipal * monthlyRate;
         isLastPeriod = true;
@@ -363,10 +395,17 @@ export function calculateSingleLoan(rawLoan) {
 
       remainingPrincipal = Math.max(0, remainingPrincipal - principal);
 
-      if (prepayItem?.method === 'reduce' && extraPrepay > 0) {
-        const remainingPeriods = term - period;
-        if (remainingPeriods > 0 && remainingPrincipal > BALANCE_EPSILON) {
-          constantPrincipal = remainingPrincipal / remainingPeriods;
+      if (prepayItem && extraPrepay > 0) {
+        if (prepayItem.method === 'shrink') {
+          const expectedRemaining = constantPrincipal > 0
+            ? Math.max(1, Math.ceil(remainingPrincipal / constantPrincipal))
+            : 0;
+          effectiveTerm = Math.min(effectiveTerm, period + expectedRemaining);
+        } else if (prepayItem.method === 'reduce') {
+          const remainingPeriods = effectiveTerm - period;
+          if (remainingPeriods > 0 && remainingPrincipal > BALANCE_EPSILON) {
+            constantPrincipal = remainingPrincipal / remainingPeriods;
+          }
         }
       }
 
@@ -457,6 +496,7 @@ export function numberToChineseUppercase(value) {
     let strYuan = String(yuan);
     let len = strYuan.length;
     let sectionCount = Math.ceil(len / 4);
+    let hadZeroSection = false;
 
     for (let i = 0; i < sectionCount; i++) {
       let sectionLen = (len % 4 === 0) ? 4 : (len % 4);
@@ -485,10 +525,13 @@ export function numberToChineseUppercase(value) {
       }
 
       if (hasNonZero) {
-        if (i > 0 && Number(section[0]) === 0) {
+        if (result !== '' && (hadZeroSection || (section.length === 4 && Number(section[0]) === 0))) {
           result += digits[0];
         }
         result += sectionStr + sectionUnit;
+        hadZeroSection = false;
+      } else if (result !== '') {
+        hadZeroSection = true;
       }
     }
     result += '元';
@@ -510,9 +553,7 @@ export function numberToChineseUppercase(value) {
     .replace(/零+/g, '零')
     .replace(/零万/g, '万')
     .replace(/零亿/g, '亿')
-    .replace(/亿万/g, '亿零')
-    .replace(/零元零/g, '零元零')
-    .replace(/^零元零(?=[壹贰叁肆伍陆柒捌玖]分)/, '零元零');
+    .replace(/亿万/g, '亿零');
 
   return result || '零元整';
 }
@@ -553,9 +594,13 @@ export function aggregateLoanPortfolio(rawLoans) {
   let peakPaymentMinor = -1;
   let peakPayment = 0;
   let peakMonth = '-';
+  let peakRegularPaymentMinor = -1;
+  let peakRegularPayment = 0;
+  let peakRegularMonth = '-';
 
   months.forEach(dateStr => {
     let payment = 0;
+    let regularPayment = 0;
     let principal = 0;
     let interest = 0;
     let remaining = 0;
@@ -568,6 +613,7 @@ export function aggregateLoanPortfolio(rawLoans) {
 
       if (row) {
         payment += row.payment;
+        regularPayment += (row.payment - row.prepay);
         principal += row.principal;
         interest += row.interest;
         remaining += row.remaining;
@@ -591,9 +637,17 @@ export function aggregateLoanPortfolio(rawLoans) {
       peakMonth = dateStr;
     }
 
+    const regularPaymentMinor = toMinorUnits(regularPayment);
+    if (regularPaymentMinor > peakRegularPaymentMinor) {
+      peakRegularPaymentMinor = regularPaymentMinor;
+      peakRegularPayment = regularPaymentMinor / 100;
+      peakRegularMonth = dateStr;
+    }
+
     monthly.push({
       dateStr,
       payment,
+      regularPayment,
       principal,
       interest,
       remaining,
@@ -618,7 +672,9 @@ export function aggregateLoanPortfolio(rawLoans) {
     totalPayment: totalPrincipal + totalInterest,
     firstMonthPayment: monthly[0]?.payment ?? 0,
     peakPayment,
-    peakMonth
+    peakMonth,
+    peakRegularPayment,
+    peakRegularMonth
   };
 }
 
@@ -635,8 +691,10 @@ function createEmptyPortfolioResult() {
     totalInterest: 0,
     totalPayment: 0,
     firstMonthPayment: 0,
-    peakPayment: 0,
-    peakMonth: '-'
+    peakPayment,
+    peakMonth: '-',
+    peakRegularPayment: 0,
+    peakRegularMonth: '-'
   };
 }
 

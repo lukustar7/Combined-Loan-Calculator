@@ -17,6 +17,7 @@ import {
   getMonthYearOffset,
   numberToChineseUppercase,
   sanitizeLoan,
+  sanitizeLoanId,
   sanitizeLoans,
   sanitizePrepayments,
   toFiniteNumber
@@ -80,6 +81,9 @@ test('数据清洗限制数量、数值、危险 ID 和重复提前还款', () =
   assert.equal(sanitized[0].method, 'ACPI');
   assert.equal(sanitized[0].term, MAX_LOAN_TERM_MONTHS);
   assert.deepEqual(sanitized[0].prepayments, [{ period: 3, amount: 5000, method: 'reduce' }]);
+  assert.equal(sanitizeLoanId('summary', 'loan_fallback'), 'loan_fallback');
+  assert.equal(sanitizeLoanId('__total__', 'loan_fallback'), 'loan_fallback');
+  assert.equal(sanitizeLoanId('loan_ok-123', 'loan_fallback'), 'loan_ok-123');
 });
 
 test('旧版单次提前还款字段会迁移到新数组', () => {
@@ -169,6 +173,22 @@ test('多笔错期多次提前还款混合策略在末期完全结清', () => {
   assert.equal(schedule.at(-1).remaining, 0);
 });
 
+test('缩短期限后再减少月供不会反向拉长总还款期限', () => {
+  const shrinkFirstLoan = createLoan({
+    amount: 1_000_000,
+    rate: 3.5,
+    term: 360,
+    prepayments: [
+      { period: 12, amount: 500_000, method: 'shrink' },
+      { period: 24, amount: 20_000, method: 'reduce' }
+    ]
+  });
+  const schedule = calculateSingleLoan(shrinkFirstLoan);
+  assert.ok(schedule.length < 200, `缩短期限后再减少月供不应反弹回360期，实际期数: ${schedule.length}`);
+  assertClose(schedule.reduce((sum, row) => sum + row.principal, 0), 1_000_000, 1e-4);
+  assert.equal(schedule.at(-1).remaining, 0);
+});
+
 test('超额提前还款在当期完全结清且不产生负数或多余期数', () => {
   const overPrepayLoan = createLoan({
     amount: 100_000,
@@ -206,6 +226,8 @@ test('金额转中文大写算法精准转换各量级财务金额', () => {
   assert.equal(numberToChineseUppercase(1234567.89), '壹佰贰拾叁万肆仟伍佰陆拾柒元捌角玖分');
   assert.equal(numberToChineseUppercase(1000500.5), '壹佰万零伍佰元伍角整');
   assert.equal(numberToChineseUppercase(100000000), '壹亿元整');
+  assert.equal(numberToChineseUppercase(100008000), '壹亿零捌仟元整'); // 验证修复跨节全零漏“零”Bug
+  assert.equal(numberToChineseUppercase(100000008), '壹亿零捌元整');
   assert.equal(numberToChineseUppercase(1000000000000), '壹万亿元整');
   assert.equal(numberToChineseUppercase(0.05), '零元零伍分');
   assert.equal(numberToChineseUppercase(0.5), '零元伍角整');
@@ -216,6 +238,8 @@ test('金额转中文大写算法精准转换各量级财务金额', () => {
 test('20色调色板与房贷组合出厂模板完备可用', () => {
   assert.equal(PALETTE_20.length, 20);
   assert.ok(PALETTE_20.every(item => item.fill && item.border && item.m3Fill && item.m3Border));
+  assert.equal(PALETTE_20[5].fill, '#808000'); // 验证修复索引5笔误
+  assert.notEqual(PALETTE_20[2].fill, PALETTE_20[5].fill); // 铁锈红与泥金黄互不相同
   assert.equal(DEFAULT_MORTGAGE_COMBO.length, 2);
   assert.equal(DEFAULT_MORTGAGE_COMBO[0].name, '公积金房贷');
   assert.equal(DEFAULT_MORTGAGE_COMBO[1].name, '商业房贷');

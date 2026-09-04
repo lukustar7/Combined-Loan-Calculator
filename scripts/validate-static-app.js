@@ -11,6 +11,7 @@ const requiredFiles = [
   'index.html',
   'styles.css',
   'app.js',
+  'sw.js',
   'src/loan-engine.js',
   'vendor/chart.umd.min.js',
   'manifest.json',
