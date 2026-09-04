@@ -45,17 +45,42 @@ const STORAGE_KEY = 'COMBINED_LOANS_DATA';
 const THEME_PREF_KEY = 'APP_THEME_PREF';
 
 /**
- * 通用防抖函数：避免频繁高频输入导致主线程掉帧
+ * 增强型防抖函数：避免频繁高频输入导致主线程掉帧，并支持 .flush() 强制立即落盘
  */
 function debounce(fn, delay = 150) {
   let timer = null;
-  return function (...args) {
+  let lastArgs = null;
+  let lastThis = null;
+
+  const debounced = function (...args) {
+    lastArgs = args;
+    lastThis = this;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
-      timer = null;
-      fn.apply(this, args);
+      debounced.flush();
     }, delay);
   };
+
+  debounced.flush = function () {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+      fn.apply(lastThis, lastArgs);
+      lastArgs = null;
+      lastThis = null;
+    }
+  };
+
+  debounced.cancel = function () {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+      lastArgs = null;
+      lastThis = null;
+    }
+  };
+
+  return debounced;
 }
 
 /**
@@ -112,12 +137,19 @@ function escapeHTML(str) {
 /**
  * CSV 单元格安全转义。
  */
-function escapeCSVCell(value) {
+/**
+ * CSV 单元格安全转义与格式保护。
+ */
+function escapeCSVCell(value, forceText = false) {
   let text = value === null || value === undefined ? '' : String(value);
-  if (/^[=+\-@]/.test(text)) {
+  // CSV 注入攻击防御：转义公式触发字符（=, +, -, @, \t, \r）
+  if (/^[=+\-@\t\r]/.test(text)) {
     text = `'${text}`;
   }
-  if (/[",\r\n]/.test(text)) {
+  // 强制作为文本展示（例如期数年月 2026-08），防止被 Excel 篡改为日期格式
+  if (forceText && !text.startsWith("'") && !text.startsWith('="')) {
+    text = `\t${text}`;
+  } else if (/[",\r\n]/.test(text)) {
     text = `"${text.replace(/"/g, '""')}"`;
   }
   return text;
@@ -452,6 +484,7 @@ function renderTrendChart(months, aggregatedData) {
 }
 
 function renderEmptyState() {
+  globalMonthlyAggregated = [];
   document.getElementById('sumPrincipal').innerText = `0.00 万元`;
   document.getElementById('sumInterest').innerText = `0.00 万元`;
   document.getElementById('sumTotal').innerText = `0.00 万元`;
@@ -706,9 +739,17 @@ function refreshPrepayUI(loan) {
   const savings = calculatePrepaymentSavings(loan);
   const savedInterestEl = document.getElementById('savedInterestText');
   const savedMonthsEl = document.getElementById('savedMonthsText');
+  const bannerEl = document.getElementById('prepaySavingsBanner');
+  
   if (savedInterestEl && savedMonthsEl) {
     savedInterestEl.innerText = `${formatNumber(savings.savedInterest / 10000)} 万元`;
     savedMonthsEl.innerText = `${savings.savedMonths} 个月`;
+  }
+
+  // 若无提前还款或节省效益均为 0，优雅隐藏省息高亮卡片，保持界面清爽克制
+  if (bannerEl) {
+    const hasActiveSavings = (loan.prepayments && loan.prepayments.length > 0) && (savings.savedInterest > 0 || savings.savedMonths > 0);
+    bannerEl.style.display = hasActiveSavings ? 'flex' : 'none';
   }
 }
 
@@ -831,6 +872,9 @@ function handleParamChange() {
 
 const debouncedSaveAndSync = debounce(() => {
   saveData();
+  // 无论当前处于哪个面板，静默同步全局大盘聚合数据，确保导出 CSV 时总表绝对准确
+  const portfolio = aggregateLoanPortfolio(loans);
+  globalMonthlyAggregated = portfolio.monthly;
   if (currentSelectedId === 'summary') {
     calculateAll();
   }
@@ -983,14 +1027,18 @@ function clearAllData() {
 // ==========================================
 
 function exportSummaryCSV() {
-  if (loans.length === 0 || globalMonthlyAggregated.length === 0) return;
+  debouncedSaveAndSync.flush();
+  if (loans.length === 0 || globalMonthlyAggregated.length === 0) {
+    alert('暂无贷款数据可供导出。');
+    return;
+  }
   
   const headers = ['还款年月', '月供总额(元)', '本金总额(元)', '利息总额(元)', '剩余本金(元)', '活跃贷款'];
   let csvContent = '\ufeff' + headers.join(',') + '\r\n';
 
   globalMonthlyAggregated.forEach(row => {
     const csvRow = [
-      escapeCSVCell(row.dateStr),
+      escapeCSVCell(row.dateStr, true),
       escapeCSVCell(row.payment.toFixed(2)),
       escapeCSVCell(row.principal.toFixed(2)),
       escapeCSVCell(row.interest.toFixed(2)),
@@ -1012,12 +1060,16 @@ function exportSummaryCSV() {
 }
 
 function exportSingleCSV() {
+  debouncedSaveAndSync.flush();
   if (currentSelectedId === 'summary') return;
   const loan = loans.find(l => l.id === currentSelectedId);
   if (!loan) return;
 
   const schedule = calculateSingleLoan(loan);
-  if (schedule.length === 0) return;
+  if (schedule.length === 0) {
+    alert('当前贷款参数不足或金额/期限为 0，无法生成还款明细。');
+    return;
+  }
 
   const headers = ['期数', '还款年月', '当月月供(元)', '偿还本金(元)', '偿还利息(元)', '剩余本金(元)', '其中提前还款(元)'];
   let csvContent = '\ufeff' + headers.join(',') + '\r\n';
@@ -1025,7 +1077,7 @@ function exportSingleCSV() {
   schedule.forEach(row => {
     const csvRow = [
       escapeCSVCell(`第 ${row.period} 期`),
-      escapeCSVCell(row.dateStr),
+      escapeCSVCell(row.dateStr, true),
       escapeCSVCell(row.payment.toFixed(2)),
       escapeCSVCell(row.principal.toFixed(2)),
       escapeCSVCell(row.interest.toFixed(2)),
@@ -1072,9 +1124,14 @@ function showPrepayManager(isOpen) {
 
     renderPrepayManagerList();
     overlay.style.display = 'flex';
+    setTimeout(() => {
+      const periodInput = document.getElementById('dialogPrepayPeriod');
+      if (periodInput) periodInput.focus();
+    }, 50);
   } else {
     overlay.style.display = 'none';
   }
+  syncBodyModalState();
 }
 
 function syncPrepayDateHint() {
@@ -1207,6 +1264,11 @@ function confirmPrepaySelection() {
   const loan = loans.find(l => l.id === currentSelectedId);
   if (!loan) return;
 
+  // 彻底清除旧版本遗留单次提前还款字段，防止数据清洗时死灰复燃
+  delete loan.prepayPeriod;
+  delete loan.prepayAmount;
+  delete loan.prepayMethod;
+
   loan.prepayments = sanitizePrepayments(tempPrepayments, loan.term);
   showPrepayManager(false);
   
@@ -1259,11 +1321,15 @@ function showDisplayProperties(show) {
   const overlay = document.getElementById('displayPropertiesOverlay');
   if (!overlay) return;
   overlay.style.display = show ? 'flex' : 'none';
+  syncBodyModalState();
   
   if (show) {
     const currentTheme = getGlobalTheme();
     const selectEl = document.getElementById('themeSelect');
-    if (selectEl) selectEl.value = currentTheme;
+    if (selectEl) {
+      selectEl.value = currentTheme;
+      setTimeout(() => selectEl.focus(), 50);
+    }
     updatePreviewTheme(currentTheme);
   }
 }
@@ -1303,14 +1369,36 @@ function applyThemeSelection() {
   calculateAll();
 }
 
+function syncBodyModalState() {
+  const aboutOverlay = document.getElementById('aboutDialogOverlay');
+  const displayOverlay = document.getElementById('displayPropertiesOverlay');
+  const prepayOverlay = document.getElementById('prepayManagerOverlay');
+  
+  const hasOpenModal = (aboutOverlay && aboutOverlay.classList.contains('show')) ||
+    (displayOverlay && displayOverlay.style.display === 'flex') ||
+    (prepayOverlay && prepayOverlay.style.display === 'flex');
+    
+  document.body.classList.toggle('win-modal-open', Boolean(hasOpenModal));
+}
+
 function showAboutDialog() {
   const overlay = document.getElementById('aboutDialogOverlay');
-  if (overlay) overlay.classList.add('show');
+  if (overlay) {
+    overlay.classList.add('show');
+    syncBodyModalState();
+    setTimeout(() => {
+      const confirmBtn = overlay.querySelector('.win-btn');
+      if (confirmBtn) confirmBtn.focus();
+    }, 50);
+  }
 }
 
 function closeAboutDialog() {
   const overlay = document.getElementById('aboutDialogOverlay');
-  if (overlay) overlay.classList.remove('show');
+  if (overlay) {
+    overlay.classList.remove('show');
+    syncBodyModalState();
+  }
 }
 
 let isWindowMinimized = false;
@@ -1420,12 +1508,35 @@ function initApp() {
   calculateAll();
   startClock();
 
-  // PWA 离线支持：注册 Service Worker
+  // PWA 离线支持：注册 Service Worker 并监听更新
   if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http') || window.location.protocol === 'https:')) {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.info('合贷计算已在后台完成新版本缓存更新。');
+          }
+        });
+      });
+    }).catch(err => {
       console.warn('ServiceWorker 注册失败:', err);
     });
   }
+
+  // 页面即将卸载、切后台或隐藏时立即执行未完成的防抖写入，杜绝丢数据
+  window.addEventListener('beforeunload', () => {
+    debouncedSaveAndSync.flush();
+  });
+  window.addEventListener('pagehide', () => {
+    debouncedSaveAndSync.flush();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      debouncedSaveAndSync.flush();
+    }
+  });
 
   // 全局键盘导航：支持 ESC 键关闭打开的模态框
   window.addEventListener('keydown', (e) => {

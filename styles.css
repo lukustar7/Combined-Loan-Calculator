@@ -116,6 +116,28 @@ body {
   outline-offset: -4px;
 }
 
+.win-input:focus-visible,
+.win-select:focus-visible {
+  outline: 2px solid var(--win-blue-dark);
+  outline-offset: 1px;
+}
+
+body.theme-material .win-btn:focus-visible,
+body.theme-material .m3-btn:focus-visible,
+body.theme-material .m3-icon-btn:focus-visible,
+body.theme-material .win-quick-name-btn:focus-visible,
+body.theme-material .win-quick-term-btn:focus-visible,
+body.theme-material .win-toggle-btn:focus-within {
+  outline: 2px solid #0041a2 !important;
+  outline-offset: 2px;
+}
+
+body.theme-material .win-input:focus-visible,
+body.theme-material .win-select:focus-visible {
+  outline: 2px solid #0041a2 !important;
+  outline-offset: 1px;
+}
+
 .win-btn:disabled {
   color: var(--win-shadow);
   text-shadow: 1px 1px 0 var(--win-highlight);
@@ -1108,6 +1130,11 @@ body {
 /* ==========================================
    对话框与弹窗
    ========================================== */
+body.win-modal-open {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
 .win-dialog-overlay {
   position: fixed;
   top: 0;
@@ -1115,7 +1142,9 @@ body {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background-color: rgba(0,0,0,0.35);
+  background-color: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -1123,8 +1152,20 @@ body {
   padding: max(16px, var(--sat)) max(12px, var(--sar)) max(16px, var(--sab)) max(12px, var(--sal));
 }
 
-.win-dialog-overlay.show {
-  display: flex;
+.win-dialog-overlay.show,
+.win-dialog-overlay[style*="display: flex"] {
+  animation: winModalFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes winModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .win-dialog {
@@ -1132,6 +1173,15 @@ body {
   max-width: 90vw;
   display: flex;
   flex-direction: column;
+}
+
+.win-dialog::-webkit-scrollbar {
+  width: 5px;
+}
+
+.win-dialog::-webkit-scrollbar-thumb {
+  background: var(--win-shadow);
+  border-radius: 4px;
 }
 
 .win-dialog-body {
@@ -1948,6 +1998,7 @@ body.theme-material .win-dialog {
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
     padding: 2px 0 !important;
     scrollbar-width: none;
   }
@@ -2106,6 +2157,12 @@ body.theme-material .win-dialog {
     grid-column: span 2;
   }
 
+  .win-summary-card .value {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
   body.theme-material .win-summary-card {
     padding: 10px 12px;
     border-radius: 12px;
@@ -2113,6 +2170,15 @@ body.theme-material .win-dialog {
 
   body.theme-material .win-summary-card .value {
     font-size: 18px;
+  }
+
+  @media (max-width: 360px) {
+    .win-summary-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .win-summary-card-primary {
+      grid-column: span 1 !important;
+    }
   }
 
   /* 6. 图表移动端自适应 */

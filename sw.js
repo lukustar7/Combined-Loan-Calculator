@@ -1,7 +1,9 @@
 /**
  * 合贷计算 (LoanLens) - Service Worker
  * 版本: v1.5.2
- * 纯静态离线缓存策略 (Cache-First)
+ * 生产级分层离线缓存策略：
+ * 1. 导航请求 (HTML): Network-First（确保在线时即时更新，断网离线时秒级兜底缓存）
+ * 2. 静态资产 (JS/CSS/图片/字体): Cache-First（极速秒开）
  */
 
 const CACHE_NAME = 'loanlens-cache-v1.5.2';
@@ -51,8 +53,33 @@ self.addEventListener('fetch', (event) => {
   // 仅缓存同源资源
   if (url.origin !== self.location.origin) return;
 
+  const isNavigation = event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
+
+  // 1. 页面导航请求：Network-First，离线兜底 index.html
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseCopy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseCopy);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match('./index.html', { ignoreSearch: true })
+            .then((cached) => cached || caches.match('./', { ignoreSearch: true }));
+        })
+    );
+    return;
+  }
+
+  // 2. 静态文件请求：Cache-First，未命中时回退网络并按需缓存
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
@@ -65,11 +92,6 @@ self.addEventListener('fetch', (event) => {
           cache.put(event.request, responseToCache);
         });
         return networkResponse;
-      }).catch(() => {
-        // 离线且未命中时兜底回退到 index.html
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('./index.html');
-        }
       });
     })
   );
