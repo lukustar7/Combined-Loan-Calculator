@@ -1,12 +1,12 @@
 /**
- * 合贷计算 (LoanLens) - Service Worker
+ * 合贷计算 - Service Worker
  * 版本: v1.5.2
  * 生产级分层离线缓存策略：
  * 1. 导航请求 (HTML): Network-First（确保在线时即时更新，断网离线时秒级兜底缓存）
  * 2. 静态资产 (JS/CSS/图片/字体): Cache-First（极速秒开）
  */
 
-const CACHE_NAME = 'loanlens-cache-v1.5.2';
+const CACHE_NAME = 'combined-loan-cache-v1.5.2';
 
 const PRECACHE_ASSETS = [
   './',
